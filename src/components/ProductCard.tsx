@@ -1,0 +1,144 @@
+import { Product } from "@/types/product";
+import { Button } from "@/components/ui/button";
+import { Card } from "@/components/ui/card";
+import { Minus, Plus, Trash2 } from "lucide-react";
+import { isLowStock, isExpiringSoon } from "@/utils/productHelpers";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
+
+interface ProductCardProps {
+  product: Product;
+  onUpdateQuantity: (id: string, delta: number) => void;
+  onDelete: (id: string) => void;
+}
+
+export const ProductCard = ({ product, onUpdateQuantity, onDelete }: ProductCardProps) => {
+  const lowStock = isLowStock(product.quantity);
+  const expiring = isExpiringSoon(product.expiryDate);
+  
+  const cardClass = lowStock 
+    ? "bg-low-stock border-low-stock-border border-2" 
+    : expiring 
+    ? "bg-expiring border-expiring-border border-2"
+    : "border-2";
+
+  const formatDate = (dateString?: string) => {
+    if (!dateString) return null;
+    const date = new Date(dateString);
+    return date.toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' });
+  };
+
+  return (
+    <Card className={`p-6 ${cardClass}`}>
+      <div className="space-y-4">
+        <div className="flex justify-between items-start gap-4">
+          <div className="flex-1 min-w-0">
+            <h3 className="text-2xl font-bold truncate">{product.name}</h3>
+            {product.category && (
+              <span className="text-sm text-muted-foreground">{product.category}</span>
+            )}
+          </div>
+          <div className="text-right">
+            <div className="text-3xl font-bold">{product.quantity}</div>
+            <div className="text-sm text-muted-foreground">in stock</div>
+          </div>
+        </div>
+
+        {product.expiryDate && (
+          <div className="text-base">
+            <span className="text-muted-foreground">Expires: </span>
+            <span className="font-medium">{formatDate(product.expiryDate)}</span>
+          </div>
+        )}
+
+        {(product.costPrice || product.sellingPrice) && (
+          <div className="flex gap-6 text-base">
+            {product.costPrice && (
+              <div>
+                <span className="text-muted-foreground">Cost: </span>
+                <span className="font-medium">₹{product.costPrice}</span>
+              </div>
+            )}
+            {product.sellingPrice && (
+              <div>
+                <span className="text-muted-foreground">Selling: </span>
+                <span className="font-medium">₹{product.sellingPrice}</span>
+              </div>
+            )}
+          </div>
+        )}
+
+        {lowStock && (
+          <div className="text-low-stock-foreground font-semibold text-lg">
+            ⚠️ Low Stock - Please restock soon
+          </div>
+        )}
+
+        {expiring && (
+          <div className="text-expiring-foreground font-semibold text-lg">
+            ⏰ Expiring Soon
+          </div>
+        )}
+
+        <div className="flex gap-3 pt-2">
+          <Button
+            onClick={() => onUpdateQuantity(product.id, -1)}
+            disabled={product.quantity === 0}
+            variant="destructive"
+            size="lg"
+            className="flex-1 h-16 text-xl"
+          >
+            <Minus className="h-6 w-6 mr-2" />
+            Decrease
+          </Button>
+          <Button
+            onClick={() => onUpdateQuantity(product.id, 1)}
+            className="flex-1 h-16 text-xl bg-success hover:bg-success/90 text-success-foreground"
+            size="lg"
+          >
+            <Plus className="h-6 w-6 mr-2" />
+            Increase
+          </Button>
+        </div>
+
+        <AlertDialog>
+          <AlertDialogTrigger asChild>
+            <Button
+              variant="outline"
+              className="w-full h-12 text-destructive border-destructive hover:bg-destructive hover:text-destructive-foreground"
+            >
+              <Trash2 className="h-5 w-5 mr-2" />
+              Delete Product
+            </Button>
+          </AlertDialogTrigger>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Delete {product.name}?</AlertDialogTitle>
+              <AlertDialogDescription className="text-base">
+                This will permanently remove this product from your inventory. This action cannot be undone.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel className="h-12 text-lg">Cancel</AlertDialogCancel>
+              <AlertDialogAction
+                onClick={() => onDelete(product.id)}
+                className="h-12 text-lg bg-destructive hover:bg-destructive/90"
+              >
+                Delete
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
+      </div>
+    </Card>
+  );
+};
