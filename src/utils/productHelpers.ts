@@ -1,7 +1,7 @@
 import { Product } from "@/types/product";
 
 export const isLowStock = (quantity: number): boolean => {
-  return quantity < 5;
+  return quantity < 10;
 };
 
 export const isExpiringSoon = (expiryDate?: string): boolean => {
