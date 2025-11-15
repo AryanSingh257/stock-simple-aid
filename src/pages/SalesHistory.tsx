@@ -1,9 +1,16 @@
 import { Sale } from "@/types/sale";
 import { useLocalStorage } from "@/hooks/useLocalStorage";
 import { Navigation } from "@/components/Navigation";
+import { useState, useMemo } from "react";
+import { Button } from "@/components/ui/button";
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts";
+import { Card } from "@/components/ui/card";
+
+type TimePeriod = "daily" | "monthly" | "yearly";
 
 const SalesHistory = () => {
   const [sales] = useLocalStorage<Sale[]>("stockease-sales", []);
+  const [timePeriod, setTimePeriod] = useState<TimePeriod>("daily");
 
   const formatDate = (timestamp: string) => {
     const date = new Date(timestamp);
@@ -22,60 +29,183 @@ const SalesHistory = () => {
     });
   };
 
+  const revenueData = useMemo(() => {
+    const dataMap = new Map<string, number>();
+    const now = new Date();
+
+    sales.forEach((sale) => {
+      const saleDate = new Date(sale.timestamp);
+      let key = "";
+
+      if (timePeriod === "daily") {
+        // Last 30 days
+        const daysDiff = Math.floor((now.getTime() - saleDate.getTime()) / (1000 * 60 * 60 * 24));
+        if (daysDiff <= 30) {
+          key = saleDate.toLocaleDateString("en-IN", { day: "2-digit", month: "short" });
+        }
+      } else if (timePeriod === "monthly") {
+        // Current year months
+        if (saleDate.getFullYear() === now.getFullYear()) {
+          key = saleDate.toLocaleDateString("en-IN", { month: "short" });
+        }
+      } else if (timePeriod === "yearly") {
+        // Last 5 years
+        const yearsDiff = now.getFullYear() - saleDate.getFullYear();
+        if (yearsDiff <= 5) {
+          key = saleDate.getFullYear().toString();
+        }
+      }
+
+      if (key) {
+        dataMap.set(key, (dataMap.get(key) || 0) + sale.totalAmount);
+      }
+    });
+
+    return Array.from(dataMap.entries())
+      .map(([date, revenue]) => ({ date, revenue }))
+      .sort((a, b) => {
+        if (timePeriod === "yearly") {
+          return parseInt(a.date) - parseInt(b.date);
+        }
+        return 0;
+      });
+  }, [sales, timePeriod]);
+
+  const totalRevenue = useMemo(() => {
+    return revenueData.reduce((sum, item) => sum + item.revenue, 0);
+  }, [revenueData]);
+
   return (
     <div className="min-h-screen bg-background p-4 md:p-8">
       <div className="max-w-4xl mx-auto">
         <div className="mb-8">
-          <h1 className="text-4xl font-bold mb-2">Sales History</h1>
-          <p className="text-xl text-muted-foreground">View all completed sales</p>
+          <h1 className="text-4xl font-bold mb-2">Sales & Revenue</h1>
+          <p className="text-xl text-muted-foreground">Track your business performance</p>
         </div>
 
         <Navigation />
 
-        <div className="space-y-4">
-          {sales.length === 0 ? (
-            <div className="text-center py-16">
-              <p className="text-2xl text-muted-foreground">No sales yet</p>
-            </div>
-          ) : (
-            sales.map((sale) => (
-              <div
-                key={sale.id}
-                className="bg-card border-2 border-border rounded-lg p-6"
-              >
-                <div className="flex justify-between items-start mb-4">
-                  <div>
-                    <p className="text-2xl font-semibold">
-                      {formatDate(sale.timestamp)}
-                    </p>
-                    <p className="text-lg text-muted-foreground">
-                      {formatTime(sale.timestamp)}
-                    </p>
-                  </div>
-                  <div className="text-right">
-                    <p className="text-3xl font-bold">₹{sale.totalAmount.toFixed(2)}</p>
-                  </div>
-                </div>
-
-                <div className="border-t pt-4">
-                  <p className="text-lg mb-3">
-                    <span className="font-semibold">{sale.itemCount}</span> items sold
-                  </p>
-                  <div className="space-y-2">
-                    {sale.items.map((item, index) => (
-                      <div key={index} className="flex justify-between text-base">
-                        <span>
-                          {item.name} <span className="text-muted-foreground">× {item.quantity}</span>
-                        </span>
-                        <span className="font-semibold">₹{item.subtotal.toFixed(2)}</span>
-                      </div>
-                    ))}
-                  </div>
+        {sales.length === 0 ? (
+          <div className="text-center py-16">
+            <p className="text-2xl text-muted-foreground">No sales yet</p>
+          </div>
+        ) : (
+          <>
+            {/* Revenue Analytics Section */}
+            <Card className="p-6 mb-8">
+              <div className="mb-6">
+                <h2 className="text-2xl font-bold mb-4">Revenue Analytics</h2>
+                <div className="flex gap-3 mb-6">
+                  <Button
+                    variant={timePeriod === "daily" ? "default" : "outline"}
+                    size="lg"
+                    onClick={() => setTimePeriod("daily")}
+                    className="flex-1 h-14 text-lg"
+                  >
+                    Daily
+                  </Button>
+                  <Button
+                    variant={timePeriod === "monthly" ? "default" : "outline"}
+                    size="lg"
+                    onClick={() => setTimePeriod("monthly")}
+                    className="flex-1 h-14 text-lg"
+                  >
+                    Monthly
+                  </Button>
+                  <Button
+                    variant={timePeriod === "yearly" ? "default" : "outline"}
+                    size="lg"
+                    onClick={() => setTimePeriod("yearly")}
+                    className="flex-1 h-14 text-lg"
+                  >
+                    Yearly
+                  </Button>
                 </div>
               </div>
-            ))
-          )}
-        </div>
+
+              {/* Total Revenue Summary */}
+              <div className="mb-6 p-4 bg-secondary rounded-lg">
+                <p className="text-lg text-muted-foreground mb-1">Total Revenue</p>
+                <p className="text-4xl font-bold">₹{totalRevenue.toFixed(2)}</p>
+              </div>
+
+              {/* Revenue Chart */}
+              <div className="h-[300px] w-full">
+                <ResponsiveContainer width="100%" height="100%">
+                  <LineChart data={revenueData}>
+                    <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+                    <XAxis 
+                      dataKey="date" 
+                      stroke="hsl(var(--foreground))"
+                      style={{ fontSize: '14px' }}
+                    />
+                    <YAxis 
+                      stroke="hsl(var(--foreground))"
+                      style={{ fontSize: '14px' }}
+                      tickFormatter={(value) => `₹${value}`}
+                    />
+                    <Tooltip 
+                      contentStyle={{
+                        backgroundColor: 'hsl(var(--card))',
+                        border: '2px solid hsl(var(--border))',
+                        borderRadius: '8px',
+                        fontSize: '16px',
+                      }}
+                      formatter={(value: number) => [`₹${value.toFixed(2)}`, 'Revenue']}
+                    />
+                    <Line 
+                      type="monotone" 
+                      dataKey="revenue" 
+                      stroke="hsl(var(--primary))" 
+                      strokeWidth={3}
+                      dot={{ fill: 'hsl(var(--primary))', r: 5 }}
+                    />
+                  </LineChart>
+                </ResponsiveContainer>
+              </div>
+            </Card>
+
+            {/* Sales History Section */}
+            <div className="mb-4">
+              <h2 className="text-2xl font-bold mb-4">Sales History</h2>
+            </div>
+            <div className="space-y-4 max-h-[600px] overflow-y-auto pr-2">
+              {sales.slice().reverse().map((sale) => (
+                <Card key={sale.id} className="p-6">
+                  <div className="flex justify-between items-start mb-4">
+                    <div>
+                      <p className="text-2xl font-semibold">
+                        {formatDate(sale.timestamp)}
+                      </p>
+                      <p className="text-lg text-muted-foreground">
+                        {formatTime(sale.timestamp)}
+                      </p>
+                    </div>
+                    <div className="text-right">
+                      <p className="text-3xl font-bold">₹{sale.totalAmount.toFixed(2)}</p>
+                    </div>
+                  </div>
+
+                  <div className="border-t pt-4">
+                    <p className="text-lg mb-3">
+                      <span className="font-semibold">{sale.itemCount}</span> items sold
+                    </p>
+                    <div className="space-y-2">
+                      {sale.items.map((item, index) => (
+                        <div key={index} className="flex justify-between text-base">
+                          <span>
+                            {item.name} <span className="text-muted-foreground">× {item.quantity}</span>
+                          </span>
+                          <span className="font-semibold">₹{item.subtotal.toFixed(2)}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </Card>
+              ))}
+            </div>
+          </>
+        )}
       </div>
     </div>
   );
