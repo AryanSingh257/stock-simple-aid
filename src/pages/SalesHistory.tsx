@@ -38,21 +38,20 @@ const SalesHistory = () => {
       let key = "";
 
       if (timePeriod === "daily") {
-        // Last 30 days
-        const daysDiff = Math.floor((now.getTime() - saleDate.getTime()) / (1000 * 60 * 60 * 24));
-        if (daysDiff <= 30) {
-          key = saleDate.toLocaleDateString("en-IN", { day: "2-digit", month: "short" });
+        // Show sales for each hour of today
+        if (saleDate.toDateString() === now.toDateString()) {
+          const hour = saleDate.getHours();
+          key = `${hour.toString().padStart(2, '0')}:00`;
         }
       } else if (timePeriod === "monthly") {
-        // Current year months
-        if (saleDate.getFullYear() === now.getFullYear()) {
-          key = saleDate.toLocaleDateString("en-IN", { month: "short" });
+        // Show sales for each day of current month
+        if (saleDate.getMonth() === now.getMonth() && saleDate.getFullYear() === now.getFullYear()) {
+          key = saleDate.toLocaleDateString("en-IN", { day: "2-digit", month: "short" });
         }
       } else if (timePeriod === "yearly") {
-        // Last 5 years
-        const yearsDiff = now.getFullYear() - saleDate.getFullYear();
-        if (yearsDiff <= 5) {
-          key = saleDate.getFullYear().toString();
+        // Show sales for each month of current year
+        if (saleDate.getFullYear() === now.getFullYear()) {
+          key = saleDate.toLocaleDateString("en-IN", { month: "short" });
         }
       }
 
@@ -61,14 +60,32 @@ const SalesHistory = () => {
       }
     });
 
-    return Array.from(dataMap.entries())
-      .map(([date, revenue]) => ({ date, revenue }))
-      .sort((a, b) => {
-        if (timePeriod === "yearly") {
-          return parseInt(a.date) - parseInt(b.date);
-        }
-        return 0;
+    // Fill in missing data points with 0 revenue
+    let completeData: Array<{ date: string; revenue: number }> = [];
+    
+    if (timePeriod === "daily") {
+      // Create 24 hour entries
+      for (let i = 0; i < 24; i++) {
+        const hourKey = `${i.toString().padStart(2, '0')}:00`;
+        completeData.push({ date: hourKey, revenue: dataMap.get(hourKey) || 0 });
+      }
+    } else if (timePeriod === "monthly") {
+      // Create entries for each day of current month
+      const daysInMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate();
+      for (let i = 1; i <= daysInMonth; i++) {
+        const dayDate = new Date(now.getFullYear(), now.getMonth(), i);
+        const dayKey = dayDate.toLocaleDateString("en-IN", { day: "2-digit", month: "short" });
+        completeData.push({ date: dayKey, revenue: dataMap.get(dayKey) || 0 });
+      }
+    } else if (timePeriod === "yearly") {
+      // Create entries for each month of current year
+      const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+      months.forEach(month => {
+        completeData.push({ date: month, revenue: dataMap.get(month) || 0 });
       });
+    }
+
+    return completeData;
   }, [sales, timePeriod]);
 
   const totalRevenue = useMemo(() => {
