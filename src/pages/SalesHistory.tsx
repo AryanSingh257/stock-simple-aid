@@ -175,7 +175,7 @@ const SalesHistory = () => {
                       dataKey="revenue" 
                       stroke="hsl(var(--primary))" 
                       strokeWidth={3}
-                      dot={{ fill: 'hsl(var(--primary))', r: 5 }}
+                      dot={{ fill: 'hsl(var(--primary))', r: 5, fillOpacity: 0.3 }}
                     />
                   </LineChart>
                 </ResponsiveContainer>
