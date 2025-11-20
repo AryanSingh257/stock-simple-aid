@@ -21,7 +21,6 @@ const Billing = () => {
       (p) =>
         (p.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
          (p.category?.toLowerCase() || "").includes(searchQuery.toLowerCase())) &&
-        p.quantity > 0 &&
         (p.sellingPrice || 0) > 0
     );
   }, [products, searchQuery]);
@@ -200,18 +199,24 @@ const Billing = () => {
                 {categoryProducts.map((product) => {
                   const qtyInBill = getItemQuantity(product.id);
                   const isPurchased = (product.purchaseCount || 0) > 0;
+                  const isOutOfStock = product.quantity === 0;
                   return (
                     <div
                       key={product.id}
-                      className={`bg-card border-2 border-border rounded-lg p-6 ${isPurchased ? 'border-primary/30' : ''}`}
+                      className={`bg-card border-2 border-border rounded-lg p-6 ${isPurchased ? 'border-primary/30' : ''} ${isOutOfStock ? 'opacity-60' : ''}`}
                     >
                       <div className="flex justify-between items-start mb-4">
                         <div className="flex-1">
-                          <h3 className="text-2xl font-semibold mb-2">
+                          <h3 className={`text-2xl font-semibold mb-2 ${isOutOfStock ? 'text-destructive' : ''}`}>
                             {product.name}
                             {isPurchased && (
                               <span className="ml-3 text-sm font-normal text-muted-foreground">
                                 ({product.purchaseCount} sold)
+                              </span>
+                            )}
+                            {isOutOfStock && (
+                              <span className="ml-3 text-sm font-normal text-destructive">
+                                (Out of Stock)
                               </span>
                             )}
                           </h3>
@@ -219,7 +224,7 @@ const Billing = () => {
                             <p className="text-lg">
                               Price: <span className="font-semibold">₹{(product.sellingPrice || 0).toFixed(2)}</span>
                             </p>
-                            <p className="text-lg">
+                            <p className={`text-lg ${isOutOfStock ? 'text-destructive font-bold' : ''}`}>
                               Stock: <span className="font-semibold">{product.quantity}</span>
                             </p>
                           </div>
@@ -242,6 +247,7 @@ const Billing = () => {
                           onClick={() => handleIncrease(product.id)}
                           size="lg"
                           className="h-14 w-14 text-2xl"
+                          disabled={isOutOfStock}
                         >
                           <Plus className="h-6 w-6" />
                         </Button>
