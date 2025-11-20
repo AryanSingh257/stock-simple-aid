@@ -74,7 +74,7 @@ const Index = () => {
     <div className="min-h-screen bg-background p-4 md:p-8">
       <div className="max-w-4xl mx-auto">
       <div className="mb-8">
-        <h1 className="text-4xl font-bold mb-2">Inventry</h1>
+        <h1 className="text-4xl font-bold mb-2">inven3</h1>
         <p className="text-xl text-muted-foreground">Simple inventory for shopkeepers</p>
       </div>
 
