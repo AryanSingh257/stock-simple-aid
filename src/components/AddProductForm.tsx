@@ -31,6 +31,8 @@ export const AddProductForm = ({ onAdd }: AddProductFormProps) => {
     name: "",
     quantity: 0,
   });
+  const [shelfLifeDuration, setShelfLifeDuration] = useState<number | "">("");
+  const [shelfLifeUnit, setShelfLifeUnit] = useState<"days" | "months">("days");
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -45,8 +47,22 @@ export const AddProductForm = ({ onAdd }: AddProductFormProps) => {
       return;
     }
 
-    onAdd(formData);
+    // Calculate expiry date if shelf life is provided
+    let calculatedExpiryDate: string | undefined;
+    if (shelfLifeDuration && shelfLifeDuration > 0) {
+      const currentDate = new Date();
+      if (shelfLifeUnit === "days") {
+        currentDate.setDate(currentDate.getDate() + Number(shelfLifeDuration));
+      } else if (shelfLifeUnit === "months") {
+        currentDate.setMonth(currentDate.getMonth() + Number(shelfLifeDuration));
+      }
+      calculatedExpiryDate = currentDate.toISOString().split('T')[0];
+    }
+
+    onAdd({ ...formData, expiryDate: calculatedExpiryDate });
     setFormData({ name: "", quantity: 0 });
+    setShelfLifeDuration("");
+    setShelfLifeUnit("days");
     setOpen(false);
     toast.success("Product added successfully");
   };
@@ -112,14 +128,27 @@ export const AddProductForm = ({ onAdd }: AddProductFormProps) => {
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="expiryDate" className="text-lg">Expiry Date (Optional)</Label>
-            <Input
-              id="expiryDate"
-              type="date"
-              value={formData.expiryDate || ""}
-              onChange={(e) => setFormData({ ...formData, expiryDate: e.target.value })}
-              className="h-14 text-lg"
-            />
+            <Label className="text-lg">How long does this item last? (Optional)</Label>
+            <div className="flex gap-2">
+              <Input
+                id="shelfLifeDuration"
+                type="number"
+                min="1"
+                value={shelfLifeDuration}
+                onChange={(e) => setShelfLifeDuration(e.target.value ? parseInt(e.target.value) : "")}
+                placeholder="Enter duration"
+                className="h-14 text-lg flex-1"
+              />
+              <Select value={shelfLifeUnit} onValueChange={(value) => setShelfLifeUnit(value as "days" | "months")}>
+                <SelectTrigger className="h-14 text-lg w-32">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent className="bg-popover z-50">
+                  <SelectItem value="days" className="text-lg">Days</SelectItem>
+                  <SelectItem value="months" className="text-lg">Months</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
           </div>
 
           <div className="grid grid-cols-2 gap-4">
