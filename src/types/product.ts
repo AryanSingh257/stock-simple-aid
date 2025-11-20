@@ -6,6 +6,7 @@ export interface Product {
   category?: "Grocery" | "Medicine" | "Stationery" | "Other";
   costPrice?: number;
   sellingPrice?: number;
+  purchaseCount?: number;
   createdAt: string;
 }
 

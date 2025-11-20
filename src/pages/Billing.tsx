@@ -19,11 +19,38 @@ const Billing = () => {
   const filteredProducts = useMemo(() => {
     return products.filter(
       (p) =>
-        p.name.toLowerCase().includes(searchQuery.toLowerCase()) &&
+        (p.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+         (p.category?.toLowerCase() || "").includes(searchQuery.toLowerCase())) &&
         p.quantity > 0 &&
         (p.sellingPrice || 0) > 0
     );
   }, [products, searchQuery]);
+
+  const groupedProducts = useMemo(() => {
+    const groups: Record<string, Product[]> = {};
+    
+    filteredProducts.forEach((product) => {
+      const category = product.category || "Other";
+      if (!groups[category]) {
+        groups[category] = [];
+      }
+      groups[category].push(product);
+    });
+
+    // Sort each category by purchase count (descending), then by creation date
+    Object.keys(groups).forEach((category) => {
+      groups[category].sort((a, b) => {
+        const countA = a.purchaseCount || 0;
+        const countB = b.purchaseCount || 0;
+        if (countB !== countA) {
+          return countB - countA;
+        }
+        return new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime();
+      });
+    });
+
+    return groups;
+  }, [filteredProducts]);
 
   const totalAmount = billItems.reduce((sum, item) => sum + item.subtotal, 0);
   const itemCount = billItems.reduce((sum, item) => sum + item.quantity, 0);
@@ -93,11 +120,12 @@ const Billing = () => {
       return;
     }
 
-    // Update stock
+    // Update stock and purchase count
     const updatedProducts = products.map((product) => {
       const billItem = billItems.find((item) => item.productId === product.id);
       if (billItem) {
         const newQuantity = product.quantity - billItem.quantity;
+        const newPurchaseCount = (product.purchaseCount || 0) + billItem.quantity;
         
         // Show alerts
         if (newQuantity < 10 && newQuantity >= 0) {
@@ -113,7 +141,7 @@ const Billing = () => {
           }
         }
         
-        return { ...product, quantity: newQuantity };
+        return { ...product, quantity: newQuantity, purchaseCount: newPurchaseCount };
       }
       return product;
     });
@@ -158,58 +186,73 @@ const Billing = () => {
         
         <SearchBar value={searchQuery} onChange={setSearchQuery} />
 
-        <div className="space-y-4 mb-24">
-          {filteredProducts.length === 0 ? (
+        <div className="space-y-8 mb-24">
+          {Object.keys(groupedProducts).length === 0 ? (
             <div className="text-center py-16">
               <p className="text-2xl text-muted-foreground">
                 {searchQuery ? "No products found" : "No products available for billing"}
               </p>
             </div>
           ) : (
-            filteredProducts.map((product) => {
-              const qtyInBill = getItemQuantity(product.id);
-              return (
-                <div
-                  key={product.id}
-                  className="bg-card border-2 border-border rounded-lg p-6"
-                >
-                  <div className="flex justify-between items-start mb-4">
-                    <div className="flex-1">
-                      <h3 className="text-2xl font-semibold mb-2">{product.name}</h3>
-                      <div className="space-y-1">
-                        <p className="text-lg">
-                          Price: <span className="font-semibold">₹{(product.sellingPrice || 0).toFixed(2)}</span>
-                        </p>
-                        <p className="text-lg">
-                          Stock: <span className="font-semibold">{product.quantity}</span>
-                        </p>
+            Object.entries(groupedProducts).map(([category, categoryProducts]) => (
+              <div key={category} className="space-y-4">
+                <h2 className="text-2xl font-bold border-b-2 pb-2">{category}</h2>
+                {categoryProducts.map((product) => {
+                  const qtyInBill = getItemQuantity(product.id);
+                  const isPurchased = (product.purchaseCount || 0) > 0;
+                  return (
+                    <div
+                      key={product.id}
+                      className={`bg-card border-2 border-border rounded-lg p-6 transition-opacity ${
+                        qtyInBill === 0 ? 'opacity-60' : 'opacity-100'
+                      } ${isPurchased ? 'border-primary/30' : ''}`}
+                    >
+                      <div className="flex justify-between items-start mb-4">
+                        <div className="flex-1">
+                          <h3 className="text-2xl font-semibold mb-2">
+                            {product.name}
+                            {isPurchased && (
+                              <span className="ml-3 text-sm font-normal text-muted-foreground">
+                                ({product.purchaseCount} sold)
+                              </span>
+                            )}
+                          </h3>
+                          <div className="space-y-1">
+                            <p className="text-lg">
+                              Price: <span className="font-semibold">₹{(product.sellingPrice || 0).toFixed(2)}</span>
+                            </p>
+                            <p className="text-lg">
+                              Stock: <span className="font-semibold">{product.quantity}</span>
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-4">
+                        <Button
+                          onClick={() => handleDecrease(product.id)}
+                          size="lg"
+                          variant="destructive"
+                          className="h-14 w-14 text-2xl"
+                          disabled={qtyInBill === 0}
+                        >
+                          <Minus className="h-6 w-6" />
+                        </Button>
+                        <div className="flex-1 text-center">
+                          <p className="text-xl font-semibold">Qty: {qtyInBill}</p>
+                        </div>
+                        <Button
+                          onClick={() => handleIncrease(product.id)}
+                          size="lg"
+                          className="h-14 w-14 text-2xl"
+                        >
+                          <Plus className="h-6 w-6" />
+                        </Button>
                       </div>
                     </div>
-                  </div>
-                  <div className="flex items-center gap-4">
-                    <Button
-                      onClick={() => handleDecrease(product.id)}
-                      size="lg"
-                      variant="destructive"
-                      className="h-14 w-14 text-2xl"
-                      disabled={qtyInBill === 0}
-                    >
-                      <Minus className="h-6 w-6" />
-                    </Button>
-                    <div className="flex-1 text-center">
-                      <p className="text-xl font-semibold">Qty: {qtyInBill}</p>
-                    </div>
-                    <Button
-                      onClick={() => handleIncrease(product.id)}
-                      size="lg"
-                      className="h-14 w-14 text-2xl"
-                    >
-                      <Plus className="h-6 w-6" />
-                    </Button>
-                  </div>
-                </div>
-              );
-            })
+                  );
+                })}
+              </div>
+            ))
           )}
         </div>
 
