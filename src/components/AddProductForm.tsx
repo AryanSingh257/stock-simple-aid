@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { ProductFormData } from "@/types/product";
+import { Batch } from "@/types/batch";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -47,9 +48,11 @@ export const AddProductForm = ({ onAdd }: AddProductFormProps) => {
       return;
     }
 
-    // Calculate expiry date if shelf life is provided
+    // Calculate expiry date and create initial batch if shelf life is provided
     let calculatedExpiryDate: string | undefined;
-    if (shelfLifeDuration && shelfLifeDuration > 0) {
+    let initialBatch: Batch | undefined;
+    
+    if (shelfLifeDuration && shelfLifeDuration > 0 && formData.quantity > 0) {
       const currentDate = new Date();
       if (shelfLifeUnit === "days") {
         currentDate.setDate(currentDate.getDate() + Number(shelfLifeDuration));
@@ -57,9 +60,25 @@ export const AddProductForm = ({ onAdd }: AddProductFormProps) => {
         currentDate.setMonth(currentDate.getMonth() + Number(shelfLifeDuration));
       }
       calculatedExpiryDate = currentDate.toISOString().split('T')[0];
+      
+      // Create initial batch
+      initialBatch = {
+        id: crypto.randomUUID(),
+        quantity: formData.quantity,
+        duration: shelfLifeDuration,
+        durationUnit: shelfLifeUnit,
+        expiryDate: calculatedExpiryDate,
+        costPrice: formData.costPrice,
+        status: "active",
+        dateAdded: new Date().toISOString(),
+      };
     }
 
-    onAdd({ ...formData, expiryDate: calculatedExpiryDate });
+    onAdd({ 
+      ...formData, 
+      expiryDate: calculatedExpiryDate,
+      batches: initialBatch ? [initialBatch] : []
+    });
     setFormData({ name: "", quantity: 0 });
     setShelfLifeDuration("");
     setShelfLifeUnit("days");

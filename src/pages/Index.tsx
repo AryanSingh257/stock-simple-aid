@@ -1,5 +1,6 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { Product, ProductFormData } from "@/types/product";
+import { syncProductWithBatches } from "@/utils/batchHelpers";
 import { useLocalStorage } from "@/hooks/useLocalStorage";
 import { Navigation } from "@/components/Navigation";
 import { SearchBar } from "@/components/SearchBar";
@@ -22,6 +23,14 @@ const Index = () => {
   const [searchQuery, setSearchQuery] = useState("");
   const [categoryFilter, setCategoryFilter] = useState<string>("all");
 
+  // Sync products with batches on mount and when products change
+  useEffect(() => {
+    const syncedProducts = products.map(syncProductWithBatches);
+    if (JSON.stringify(syncedProducts) !== JSON.stringify(products)) {
+      setProducts(syncedProducts);
+    }
+  }, []);
+
   const handleAddProduct = (productData: ProductFormData) => {
     const newProduct: Product = {
       ...productData,
@@ -29,6 +38,10 @@ const Index = () => {
       createdAt: new Date().toISOString(),
     };
     setProducts([...products, newProduct]);
+  };
+
+  const handleUpdateProduct = (updatedProduct: Product) => {
+    setProducts(products.map(p => p.id === updatedProduct.id ? updatedProduct : p));
   };
 
   const handleUpdateQuantity = (id: string, delta: number) => {
@@ -125,6 +138,7 @@ const Index = () => {
                 product={product}
                 onUpdateQuantity={handleUpdateQuantity}
                 onDelete={handleDeleteProduct}
+                onUpdateProduct={handleUpdateProduct}
               />
             ))
           )}
