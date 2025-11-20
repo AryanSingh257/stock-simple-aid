@@ -203,9 +203,7 @@ const Billing = () => {
                   return (
                     <div
                       key={product.id}
-                      className={`bg-card border-2 border-border rounded-lg p-6 transition-opacity ${
-                        qtyInBill === 0 ? 'opacity-60' : 'opacity-100'
-                      } ${isPurchased ? 'border-primary/30' : ''}`}
+                      className={`bg-card border-2 border-border rounded-lg p-6 ${isPurchased ? 'border-primary/30' : ''}`}
                     >
                       <div className="flex justify-between items-start mb-4">
                         <div className="flex-1">
