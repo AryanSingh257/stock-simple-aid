@@ -54,3 +54,39 @@ export const syncProductWithBatches = (product: Product): Product => {
     expiryDate: earliestExpiry,
   };
 };
+
+// FEFO: First Expired First Out - Deduct from batches that expire soonest
+export const deductFromBatches = (batches: Batch[], quantityToDeduct: number): Batch[] => {
+  if (quantityToDeduct <= 0) return batches;
+
+  // Sort batches by expiry date (earliest first), exclude expired batches
+  const sortedBatches = [...batches]
+    .filter(b => b.status !== "expired" && b.quantity > 0)
+    .sort((a, b) => new Date(a.expiryDate).getTime() - new Date(b.expiryDate).getTime());
+
+  let remaining = quantityToDeduct;
+  const updatedBatches = [...batches];
+
+  for (const batch of sortedBatches) {
+    if (remaining <= 0) break;
+
+    const batchIndex = updatedBatches.findIndex(b => b.id === batch.id);
+    const currentQty = updatedBatches[batchIndex].quantity;
+
+    if (currentQty >= remaining) {
+      updatedBatches[batchIndex] = {
+        ...updatedBatches[batchIndex],
+        quantity: currentQty - remaining,
+      };
+      remaining = 0;
+    } else {
+      updatedBatches[batchIndex] = {
+        ...updatedBatches[batchIndex],
+        quantity: 0,
+      };
+      remaining -= currentQty;
+    }
+  }
+
+  return updateBatchStatuses(updatedBatches);
+};

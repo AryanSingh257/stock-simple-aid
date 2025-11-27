@@ -1,16 +1,25 @@
 import { useState, useMemo } from "react";
 import { Product } from "@/types/product";
+import { Category } from "@/types/category";
 import { Sale, SaleItem } from "@/types/sale";
 import { useLocalStorage } from "@/hooks/useLocalStorage";
+import { deductFromBatches, syncProductWithBatches } from "@/utils/batchHelpers";
 import { Navigation } from "@/components/Navigation";
 import { SearchBar } from "@/components/SearchBar";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
+import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from "@/components/ui/accordion";
 import { toast } from "sonner";
-import { Trash2, Receipt, Plus, Minus } from "lucide-react";
+import { Receipt, Plus, Minus } from "lucide-react";
 
 const Billing = () => {
   const [products, setProducts] = useLocalStorage<Product[]>("stockease-products", []);
+  const [categories] = useLocalStorage<Category[]>("stockease-categories", []);
   const [sales, setSales] = useLocalStorage<Sale[]>("stockease-sales", []);
   const [searchQuery, setSearchQuery] = useState("");
   const [billItems, setBillItems] = useState<SaleItem[]>([]);
@@ -19,8 +28,7 @@ const Billing = () => {
   const filteredProducts = useMemo(() => {
     return products.filter(
       (p) =>
-        (p.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-         (p.category?.toLowerCase() || "").includes(searchQuery.toLowerCase())) &&
+        (p.name.toLowerCase().includes(searchQuery.toLowerCase())) &&
         p.quantity > 0 &&
         (p.sellingPrice || 0) > 0
     );
@@ -30,16 +38,24 @@ const Billing = () => {
     const groups: Record<string, Product[]> = {};
     
     filteredProducts.forEach((product) => {
-      const category = product.category || "Other";
-      if (!groups[category]) {
-        groups[category] = [];
+      let categoryName = "No Category";
+      
+      if (product.categoryId) {
+        const category = categories.find(c => c.id === product.categoryId);
+        if (category) {
+          categoryName = category.name;
+        }
       }
-      groups[category].push(product);
+      
+      if (!groups[categoryName]) {
+        groups[categoryName] = [];
+      }
+      groups[categoryName].push(product);
     });
 
     // Sort each category by purchase count (descending), then by creation date
-    Object.keys(groups).forEach((category) => {
-      groups[category].sort((a, b) => {
+    Object.keys(groups).forEach((categoryName) => {
+      groups[categoryName].sort((a, b) => {
         const countA = a.purchaseCount || 0;
         const countB = b.purchaseCount || 0;
         if (countB !== countA) {
@@ -50,7 +66,7 @@ const Billing = () => {
     });
 
     return groups;
-  }, [filteredProducts]);
+  }, [filteredProducts, categories]);
 
   const totalAmount = billItems.reduce((sum, item) => sum + item.subtotal, 0);
   const itemCount = billItems.reduce((sum, item) => sum + item.quantity, 0);
@@ -110,38 +126,39 @@ const Billing = () => {
     }
   };
 
-  const handleRemoveFromBill = (productId: string) => {
-    setBillItems(billItems.filter((item) => item.productId !== productId));
-  };
-
   const handleConfirmSale = () => {
     if (billItems.length === 0) {
       toast.error("Bill is empty");
       return;
     }
 
-    // Update stock and purchase count
+    // Update stock using FEFO (First Expired First Out) logic
     const updatedProducts = products.map((product) => {
       const billItem = billItems.find((item) => item.productId === product.id);
-      if (billItem) {
-        const newQuantity = product.quantity - billItem.quantity;
-        const newPurchaseCount = (product.purchaseCount || 0) + billItem.quantity;
+      if (billItem && product.batches) {
+        // Deduct from batches using FEFO
+        const updatedBatches = deductFromBatches(product.batches, billItem.quantity);
+        const updatedProduct = syncProductWithBatches({
+          ...product,
+          batches: updatedBatches,
+          purchaseCount: (product.purchaseCount || 0) + billItem.quantity,
+        });
         
         // Show alerts
-        if (newQuantity < 10 && newQuantity >= 0) {
-          toast.warning(`Low stock alert: ${product.name} (${newQuantity} left)`);
+        if (updatedProduct.quantity < 10 && updatedProduct.quantity >= 0) {
+          toast.warning(`Low stock alert: ${product.name} (${updatedProduct.quantity} left)`);
         }
         
-        if (product.expiryDate) {
+        if (updatedProduct.expiryDate) {
           const today = new Date();
-          const expiry = new Date(product.expiryDate);
+          const expiry = new Date(updatedProduct.expiryDate);
           const diffDays = Math.ceil((expiry.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
           if (diffDays <= 14 && diffDays >= 0) {
             toast.warning(`Near expiry: ${product.name} (${diffDays} days)`);
           }
         }
         
-        return { ...product, quantity: newQuantity, purchaseCount: newPurchaseCount };
+        return updatedProduct;
       }
       return product;
     });
@@ -174,6 +191,8 @@ const Billing = () => {
     return item ? item.quantity : 0;
   };
 
+  const categoryKeys = Object.keys(groupedProducts);
+
   return (
     <div className="min-h-screen bg-background p-4 md:p-8">
       <div className="max-w-4xl mx-auto">
@@ -186,71 +205,79 @@ const Billing = () => {
         
         <SearchBar value={searchQuery} onChange={setSearchQuery} />
 
-        <div className="space-y-8 mb-24">
-          {Object.keys(groupedProducts).length === 0 ? (
+        <div className="space-y-4 mb-24">
+          {categoryKeys.length === 0 ? (
             <div className="text-center py-16">
               <p className="text-2xl text-muted-foreground">
                 {searchQuery ? "No products found" : "No products available for billing"}
               </p>
             </div>
           ) : (
-            Object.entries(groupedProducts).map(([category, categoryProducts]) => (
-              <div key={category} className="space-y-4">
-                <h2 className="text-2xl font-bold border-b-2 pb-2">{category}</h2>
-                {categoryProducts.map((product) => {
-                  const qtyInBill = getItemQuantity(product.id);
-                  const isPurchased = (product.purchaseCount || 0) > 0;
-                  return (
-                    <div
-                      key={product.id}
-                      className={`bg-card border-2 border-border rounded-lg p-6 ${isPurchased ? 'border-primary/30' : ''}`}
-                    >
-                      <div className="flex justify-between items-start mb-4">
-                        <div className="flex-1">
-                          <h3 className="text-2xl font-semibold mb-2">
-                            {product.name}
-                            {isPurchased && (
-                              <span className="ml-3 text-sm font-normal text-muted-foreground">
-                                ({product.purchaseCount} sold)
-                              </span>
-                            )}
-                          </h3>
-                          <div className="space-y-1">
-                            <p className="text-lg">
-                              Price: <span className="font-semibold">₹{(product.sellingPrice || 0).toFixed(2)}</span>
-                            </p>
-                            <p className="text-lg">
-                              Stock: <span className="font-semibold">{product.quantity}</span>
-                            </p>
+            <Accordion type="single" collapsible className="space-y-4">
+              {categoryKeys.map((categoryName) => (
+                <AccordionItem key={categoryName} value={categoryName} className="border-2 rounded-lg">
+                  <AccordionTrigger className="px-6 py-4 text-2xl font-bold hover:no-underline">
+                    {categoryName} ({groupedProducts[categoryName].length})
+                  </AccordionTrigger>
+                  <AccordionContent className="px-4 pb-4">
+                    <div className="space-y-4">
+                      {groupedProducts[categoryName].map((product) => {
+                        const qtyInBill = getItemQuantity(product.id);
+                        const isPurchased = (product.purchaseCount || 0) > 0;
+                        return (
+                          <div
+                            key={product.id}
+                            className={`bg-card border-2 border-border rounded-lg p-6 ${isPurchased ? 'border-primary/30' : ''}`}
+                          >
+                            <div className="flex justify-between items-start mb-4">
+                              <div className="flex-1">
+                                <h3 className="text-2xl font-semibold mb-2">
+                                  {product.name}
+                                  {isPurchased && (
+                                    <span className="ml-3 text-sm font-normal text-muted-foreground">
+                                      ({product.purchaseCount} sold)
+                                    </span>
+                                  )}
+                                </h3>
+                                <div className="space-y-1">
+                                  <p className="text-lg">
+                                    Price: <span className="font-semibold">₹{(product.sellingPrice || 0).toFixed(2)}</span>
+                                  </p>
+                                  <p className="text-lg">
+                                    Stock: <span className="font-semibold">{product.quantity}</span>
+                                  </p>
+                                </div>
+                              </div>
+                            </div>
+                            <div className="flex items-center gap-4">
+                              <Button
+                                onClick={() => handleDecrease(product.id)}
+                                size="lg"
+                                variant="destructive"
+                                className="h-14 w-14 text-2xl"
+                                disabled={qtyInBill === 0}
+                              >
+                                <Minus className="h-6 w-6" />
+                              </Button>
+                              <div className="flex-1 text-center">
+                                <p className="text-xl font-semibold">Qty: {qtyInBill}</p>
+                              </div>
+                              <Button
+                                onClick={() => handleIncrease(product.id)}
+                                size="lg"
+                                className="h-14 w-14 text-2xl"
+                              >
+                                <Plus className="h-6 w-6" />
+                              </Button>
+                            </div>
                           </div>
-                        </div>
-                      </div>
-                      <div className="flex items-center gap-4">
-                        <Button
-                          onClick={() => handleDecrease(product.id)}
-                          size="lg"
-                          variant="destructive"
-                          className="h-14 w-14 text-2xl"
-                          disabled={qtyInBill === 0}
-                        >
-                          <Minus className="h-6 w-6" />
-                        </Button>
-                        <div className="flex-1 text-center">
-                          <p className="text-xl font-semibold">Qty: {qtyInBill}</p>
-                        </div>
-                        <Button
-                          onClick={() => handleIncrease(product.id)}
-                          size="lg"
-                          className="h-14 w-14 text-2xl"
-                        >
-                          <Plus className="h-6 w-6" />
-                        </Button>
-                      </div>
+                        );
+                      })}
                     </div>
-                  );
-                })}
-              </div>
-            ))
+                  </AccordionContent>
+                </AccordionItem>
+              ))}
+            </Accordion>
           )}
         </div>
 

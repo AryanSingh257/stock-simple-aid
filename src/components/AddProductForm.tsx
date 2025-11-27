@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { ProductFormData } from "@/types/product";
+import { Category } from "@/types/category";
 import { Batch } from "@/types/batch";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -11,29 +12,39 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from "@/components/ui/dialog";
-import { Plus } from "lucide-react";
+import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { toast } from "sonner";
 
 interface AddProductFormProps {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
   onAdd: (product: ProductFormData) => void;
+  categories: Category[];
 }
 
-export const AddProductForm = ({ onAdd }: AddProductFormProps) => {
-  const [open, setOpen] = useState(false);
+export const AddProductForm = ({ open, onOpenChange, onAdd, categories }: AddProductFormProps) => {
   const [formData, setFormData] = useState<ProductFormData>({
     name: "",
     quantity: 0,
+    categoryId: undefined,
+    costPrice: undefined,
+    sellingPrice: undefined,
+    batches: [],
   });
   const [shelfLifeDuration, setShelfLifeDuration] = useState<number | "">("");
-  const [shelfLifeUnit, setShelfLifeUnit] = useState<"days" | "months">("days");
+  const [shelfLifeUnit, setShelfLifeUnit] = useState<"days" | "weeks" | "months">("days");
+
+  const calculateExpiryDate = (duration: number, unit: "days" | "weeks" | "months"): string => {
+    const date = new Date();
+    if (unit === "days") {
+      date.setDate(date.getDate() + duration);
+    } else if (unit === "weeks") {
+      date.setDate(date.getDate() + (duration * 7));
+    } else if (unit === "months") {
+      date.setMonth(date.getMonth() + duration);
+    }
+    return date.toISOString();
+  };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -53,13 +64,7 @@ export const AddProductForm = ({ onAdd }: AddProductFormProps) => {
     let initialBatch: Batch | undefined;
     
     if (shelfLifeDuration && shelfLifeDuration > 0 && formData.quantity > 0) {
-      const currentDate = new Date();
-      if (shelfLifeUnit === "days") {
-        currentDate.setDate(currentDate.getDate() + Number(shelfLifeDuration));
-      } else if (shelfLifeUnit === "months") {
-        currentDate.setMonth(currentDate.getMonth() + Number(shelfLifeDuration));
-      }
-      calculatedExpiryDate = currentDate.toISOString().split('T')[0];
+      calculatedExpiryDate = calculateExpiryDate(shelfLifeDuration, shelfLifeUnit);
       
       // Create initial batch
       initialBatch = {
@@ -79,31 +84,43 @@ export const AddProductForm = ({ onAdd }: AddProductFormProps) => {
       expiryDate: calculatedExpiryDate,
       batches: initialBatch ? [initialBatch] : []
     });
-    setFormData({ name: "", quantity: 0 });
+    setFormData({
+      name: "",
+      quantity: 0,
+      categoryId: undefined,
+      costPrice: undefined,
+      sellingPrice: undefined,
+      batches: [],
+    });
     setShelfLifeDuration("");
     setShelfLifeUnit("days");
-    setOpen(false);
+    onOpenChange(false);
     toast.success("Product added successfully");
   };
 
+  const handleClose = () => {
+    setFormData({
+      name: "",
+      quantity: 0,
+      categoryId: undefined,
+      costPrice: undefined,
+      sellingPrice: undefined,
+      batches: [],
+    });
+    setShelfLifeDuration("");
+    setShelfLifeUnit("days");
+    onOpenChange(false);
+  };
+
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger asChild>
-        <Button size="lg" className="w-full h-16 text-xl mb-6">
-          <Plus className="h-6 w-6 mr-2" />
-          Add New Product
-        </Button>
-      </DialogTrigger>
-      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
-        <DialogHeader>
-          <DialogTitle className="text-2xl">Add New Product</DialogTitle>
-          <DialogDescription className="text-base">
-            Fill in the product details below. Only name and quantity are required.
-          </DialogDescription>
-        </DialogHeader>
-        <form onSubmit={handleSubmit} className="space-y-6 pt-4">
+    <Sheet open={open} onOpenChange={onOpenChange}>
+      <SheetContent side="bottom" className="h-[90vh] overflow-y-auto">
+        <SheetHeader>
+          <SheetTitle className="text-3xl font-bold">Add New Product</SheetTitle>
+        </SheetHeader>
+        <form onSubmit={handleSubmit} className="space-y-6 pt-6">
           <div className="space-y-2">
-            <Label htmlFor="name" className="text-lg">Product Name *</Label>
+            <Label htmlFor="name" className="text-xl">Product Name *</Label>
             <Input
               id="name"
               value={formData.name}
@@ -115,7 +132,7 @@ export const AddProductForm = ({ onAdd }: AddProductFormProps) => {
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="quantity" className="text-lg">Quantity *</Label>
+            <Label htmlFor="quantity" className="text-xl">Quantity *</Label>
             <Input
               id="quantity"
               type="number"
@@ -129,25 +146,31 @@ export const AddProductForm = ({ onAdd }: AddProductFormProps) => {
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="category" className="text-lg">Category (Optional)</Label>
+            <Label htmlFor="category" className="text-xl">
+              Category (optional)
+            </Label>
             <Select
-              value={formData.category}
-              onValueChange={(value) => setFormData({ ...formData, category: value as any })}
+              value={formData.categoryId}
+              onValueChange={(value) =>
+                setFormData({ ...formData, categoryId: value === "none" ? undefined : value })
+              }
             >
               <SelectTrigger className="h-14 text-lg">
-                <SelectValue placeholder="Select category" />
+                <SelectValue placeholder="Select a category" />
               </SelectTrigger>
-              <SelectContent className="bg-popover z-50">
-                <SelectItem value="Grocery" className="text-lg">Grocery</SelectItem>
-                <SelectItem value="Medicine" className="text-lg">Medicine</SelectItem>
-                <SelectItem value="Stationery" className="text-lg">Stationery</SelectItem>
-                <SelectItem value="Other" className="text-lg">Other</SelectItem>
+              <SelectContent className="bg-popover">
+                <SelectItem value="none" className="text-lg">No Category</SelectItem>
+                {categories.map((cat) => (
+                  <SelectItem key={cat.id} value={cat.id} className="text-lg">
+                    {cat.name}
+                  </SelectItem>
+                ))}
               </SelectContent>
             </Select>
           </div>
 
           <div className="space-y-2">
-            <Label className="text-lg">How long does this item last? (Optional)</Label>
+            <Label className="text-xl">How long does this item last? (optional)</Label>
             <div className="flex gap-2">
               <Input
                 id="shelfLifeDuration"
@@ -158,12 +181,16 @@ export const AddProductForm = ({ onAdd }: AddProductFormProps) => {
                 placeholder="Enter duration"
                 className="h-14 text-lg flex-1"
               />
-              <Select value={shelfLifeUnit} onValueChange={(value) => setShelfLifeUnit(value as "days" | "months")}>
+              <Select
+                value={shelfLifeUnit}
+                onValueChange={(value) => setShelfLifeUnit(value as "days" | "weeks" | "months")}
+              >
                 <SelectTrigger className="h-14 text-lg w-32">
                   <SelectValue />
                 </SelectTrigger>
-                <SelectContent className="bg-popover z-50">
+                <SelectContent className="bg-popover">
                   <SelectItem value="days" className="text-lg">Days</SelectItem>
+                  <SelectItem value="weeks" className="text-lg">Weeks</SelectItem>
                   <SelectItem value="months" className="text-lg">Months</SelectItem>
                 </SelectContent>
               </Select>
@@ -172,7 +199,7 @@ export const AddProductForm = ({ onAdd }: AddProductFormProps) => {
 
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label htmlFor="costPrice" className="text-lg">Cost Price (Optional)</Label>
+              <Label htmlFor="costPrice" className="text-xl">Cost Price (optional)</Label>
               <Input
                 id="costPrice"
                 type="number"
@@ -186,7 +213,7 @@ export const AddProductForm = ({ onAdd }: AddProductFormProps) => {
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="sellingPrice" className="text-lg">Selling Price (Optional)</Label>
+              <Label htmlFor="sellingPrice" className="text-xl">Selling Price (optional)</Label>
               <Input
                 id="sellingPrice"
                 type="number"
@@ -204,7 +231,7 @@ export const AddProductForm = ({ onAdd }: AddProductFormProps) => {
             <Button
               type="button"
               variant="outline"
-              onClick={() => setOpen(false)}
+              onClick={handleClose}
               className="flex-1 h-14 text-lg"
             >
               Cancel
@@ -214,7 +241,7 @@ export const AddProductForm = ({ onAdd }: AddProductFormProps) => {
             </Button>
           </div>
         </form>
-      </DialogContent>
-    </Dialog>
+      </SheetContent>
+    </Sheet>
   );
 };

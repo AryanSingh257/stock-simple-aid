@@ -5,7 +5,7 @@ export interface Product {
   name: string;
   quantity: number;
   expiryDate?: string;
-  category?: "Grocery" | "Medicine" | "Stationery" | "Other";
+  categoryId?: string;
   costPrice?: number;
   sellingPrice?: number;
   purchaseCount?: number;

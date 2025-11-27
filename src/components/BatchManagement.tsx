@@ -31,20 +31,28 @@ interface BatchManagementProps {
 export const BatchManagement = ({ batches, onAddBatch, onUpdateBatch }: BatchManagementProps) => {
   const [open, setOpen] = useState(false);
   const [editingBatch, setEditingBatch] = useState<Batch | null>(null);
-  const [formData, setFormData] = useState<BatchFormData>({
+  const [formData, setFormData] = useState<{
+    quantity: number;
+    duration: number;
+    durationUnit: "days" | "weeks" | "months";
+    costPrice: number | undefined;
+  }>({
     quantity: 0,
     duration: 0,
     durationUnit: "days",
+    costPrice: undefined,
   });
 
-  const calculateExpiryDate = (duration: number, unit: "days" | "months") => {
-    const currentDate = new Date();
+  const calculateExpiryDate = (duration: number, unit: "days" | "weeks" | "months"): string => {
+    const date = new Date();
     if (unit === "days") {
-      currentDate.setDate(currentDate.getDate() + duration);
+      date.setDate(date.getDate() + duration);
+    } else if (unit === "weeks") {
+      date.setDate(date.getDate() + (duration * 7));
     } else if (unit === "months") {
-      currentDate.setMonth(currentDate.getMonth() + duration);
+      date.setMonth(date.getMonth() + duration);
     }
-    return currentDate.toISOString().split('T')[0];
+    return date.toISOString();
   };
 
   const calculateStatus = (quantity: number, expiryDate: string) => {
@@ -100,7 +108,7 @@ export const BatchManagement = ({ batches, onAddBatch, onUpdateBatch }: BatchMan
       toast.success("Batch added successfully");
     }
 
-    setFormData({ quantity: 0, duration: 0, durationUnit: "days" });
+    setFormData({ quantity: 0, duration: 0, durationUnit: "days", costPrice: undefined });
     setEditingBatch(null);
     setOpen(false);
   };
@@ -119,7 +127,7 @@ export const BatchManagement = ({ batches, onAddBatch, onUpdateBatch }: BatchMan
   const handleClose = () => {
     setOpen(false);
     setEditingBatch(null);
-    setFormData({ quantity: 0, duration: 0, durationUnit: "days" });
+    setFormData({ quantity: 0, duration: 0, durationUnit: "days", costPrice: undefined });
   };
 
   return (
@@ -171,13 +179,16 @@ export const BatchManagement = ({ batches, onAddBatch, onUpdateBatch }: BatchMan
                   />
                   <Select
                     value={formData.durationUnit}
-                    onValueChange={(value) => setFormData({ ...formData, durationUnit: value as "days" | "months" })}
+                    onValueChange={(value) =>
+                      setFormData({ ...formData, durationUnit: value as "days" | "weeks" | "months" })
+                    }
                   >
                     <SelectTrigger className="h-12 text-lg w-32">
                       <SelectValue />
                     </SelectTrigger>
-                    <SelectContent className="bg-popover z-50">
+                    <SelectContent className="bg-popover">
                       <SelectItem value="days" className="text-lg">Days</SelectItem>
+                      <SelectItem value="weeks" className="text-lg">Weeks</SelectItem>
                       <SelectItem value="months" className="text-lg">Months</SelectItem>
                     </SelectContent>
                   </Select>

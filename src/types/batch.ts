@@ -4,7 +4,7 @@ export interface Batch {
   id: string;
   quantity: number;
   duration: number;
-  durationUnit: "days" | "months";
+  durationUnit: "days" | "weeks" | "months";
   expiryDate: string;
   costPrice?: number;
   status: BatchStatus;
