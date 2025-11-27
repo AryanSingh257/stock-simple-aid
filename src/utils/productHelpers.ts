@@ -40,12 +40,11 @@ export const sortProducts = (products: Product[]): Product[] => {
 };
 
 export const exportToCSV = (products: Product[]): void => {
-  const headers = ["Name", "Quantity", "Expiry Date", "Category", "Cost Price", "Selling Price"];
+  const headers = ["Name", "Quantity", "Expiry Date", "Cost Price", "Selling Price"];
   const rows = products.map(p => [
     p.name,
     p.quantity.toString(),
     p.expiryDate || "",
-    p.category || "",
     p.costPrice?.toString() || "",
     p.sellingPrice?.toString() || ""
   ]);

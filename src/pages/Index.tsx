@@ -1,27 +1,32 @@
 import { useState, useMemo, useEffect } from "react";
 import { Product, ProductFormData } from "@/types/product";
+import { Category, CategoryFormData } from "@/types/category";
 import { syncProductWithBatches } from "@/utils/batchHelpers";
 import { useLocalStorage } from "@/hooks/useLocalStorage";
 import { Navigation } from "@/components/Navigation";
 import { SearchBar } from "@/components/SearchBar";
 import { AddProductForm } from "@/components/AddProductForm";
+import { AddCategoryForm } from "@/components/AddCategoryForm";
 import { ProductCard } from "@/components/ProductCard";
+import { FloatingActionButton } from "@/components/FloatingActionButton";
+import { NearestExpiryCard } from "@/components/NearestExpiryCard";
 import { Button } from "@/components/ui/button";
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from "@/components/ui/accordion";
 import { sortProducts, exportToCSV } from "@/utils/productHelpers";
 import { Download } from "lucide-react";
 import { toast } from "sonner";
 
 const Index = () => {
   const [products, setProducts] = useLocalStorage<Product[]>("stockease-products", []);
+  const [categories, setCategories] = useLocalStorage<Category[]>("stockease-categories", []);
   const [searchQuery, setSearchQuery] = useState("");
-  const [categoryFilter, setCategoryFilter] = useState<string>("all");
+  const [showProductForm, setShowProductForm] = useState(false);
+  const [showCategoryForm, setShowCategoryForm] = useState(false);
 
   // Sync products with batches on mount and when products change
   useEffect(() => {
@@ -38,6 +43,15 @@ const Index = () => {
       createdAt: new Date().toISOString(),
     };
     setProducts([...products, newProduct]);
+  };
+
+  const handleAddCategory = (categoryData: CategoryFormData) => {
+    const newCategory: Category = {
+      ...categoryData,
+      id: crypto.randomUUID(),
+      createdAt: new Date().toISOString(),
+    };
+    setCategories([...categories, newCategory]);
   };
 
   const handleUpdateProduct = (updatedProduct: Product) => {
@@ -67,7 +81,7 @@ const Index = () => {
     toast.success("Inventory exported successfully");
   };
 
-  const filteredAndSortedProducts = useMemo(() => {
+  const filteredProducts = useMemo(() => {
     let filtered = products;
     
     if (searchQuery.trim()) {
@@ -76,41 +90,48 @@ const Index = () => {
       );
     }
     
-    if (categoryFilter !== "all") {
-      filtered = filtered.filter((p) => p.category === categoryFilter);
-    }
-    
     return sortProducts(filtered);
-  }, [products, searchQuery, categoryFilter]);
+  }, [products, searchQuery]);
+
+  // Group products by category
+  const groupedProducts = useMemo(() => {
+    const groups: Record<string, Product[]> = {};
+    
+    filteredProducts.forEach((product) => {
+      if (product.categoryId) {
+        const category = categories.find(c => c.id === product.categoryId);
+        const categoryName = category ? category.name : "No Category";
+        if (!groups[categoryName]) {
+          groups[categoryName] = [];
+        }
+        groups[categoryName].push(product);
+      } else {
+        if (!groups["No Category"]) {
+          groups["No Category"] = [];
+        }
+        groups["No Category"].push(product);
+      }
+    });
+
+    return groups;
+  }, [filteredProducts, categories]);
+
+  const hasCategories = categories.length > 0;
+  const categoryKeys = Object.keys(groupedProducts);
 
   return (
-    <div className="min-h-screen bg-background p-4 md:p-8">
+    <div className="min-h-screen bg-background p-4 md:p-8 pb-24">
       <div className="max-w-4xl mx-auto">
-      <div className="mb-8">
-        <h1 className="text-4xl font-bold mb-2">inven3</h1>
-        <p className="text-xl text-muted-foreground">Simple inventory for shopkeepers</p>
-      </div>
+        <div className="mb-8">
+          <h1 className="text-4xl font-bold mb-2">inven3</h1>
+          <p className="text-xl text-muted-foreground">Simple inventory for shopkeepers</p>
+        </div>
 
-      <Navigation />
+        <Navigation />
 
-      <SearchBar value={searchQuery} onChange={setSearchQuery} />
+        <NearestExpiryCard products={products} />
 
-      <div className="mb-6">
-        <Select value={categoryFilter} onValueChange={setCategoryFilter}>
-          <SelectTrigger className="h-14 text-lg">
-            <SelectValue placeholder="Filter by category" />
-          </SelectTrigger>
-          <SelectContent className="bg-popover">
-            <SelectItem value="all" className="text-lg">All Categories</SelectItem>
-            <SelectItem value="Grocery" className="text-lg">Grocery</SelectItem>
-            <SelectItem value="Medicine" className="text-lg">Medicine</SelectItem>
-            <SelectItem value="Stationery" className="text-lg">Stationery</SelectItem>
-            <SelectItem value="Other" className="text-lg">Other</SelectItem>
-          </SelectContent>
-        </Select>
-      </div>
-      
-      <AddProductForm onAdd={handleAddProduct} />
+        <SearchBar value={searchQuery} onChange={setSearchQuery} />
 
         {products.length > 0 && (
           <Button
@@ -125,14 +146,37 @@ const Index = () => {
         )}
 
         <div className="space-y-4">
-          {filteredAndSortedProducts.length === 0 ? (
+          {filteredProducts.length === 0 ? (
             <div className="text-center py-16">
               <p className="text-2xl text-muted-foreground">
-                {searchQuery ? "No products found" : "No products yet. Add your first product above!"}
+                {searchQuery ? "No products found" : "No products yet. Click the + button to add your first product!"}
               </p>
             </div>
+          ) : hasCategories && categoryKeys.length > 0 ? (
+            <Accordion type="single" collapsible className="space-y-4">
+              {categoryKeys.map((categoryName) => (
+                <AccordionItem key={categoryName} value={categoryName} className="border-2 rounded-lg">
+                  <AccordionTrigger className="px-6 py-4 text-2xl font-bold hover:no-underline">
+                    {categoryName} ({groupedProducts[categoryName].length})
+                  </AccordionTrigger>
+                  <AccordionContent className="px-4 pb-4">
+                    <div className="space-y-4">
+                      {groupedProducts[categoryName].map((product) => (
+                        <ProductCard
+                          key={product.id}
+                          product={product}
+                          onUpdateQuantity={handleUpdateQuantity}
+                          onDelete={handleDeleteProduct}
+                          onUpdateProduct={handleUpdateProduct}
+                        />
+                      ))}
+                    </div>
+                  </AccordionContent>
+                </AccordionItem>
+              ))}
+            </Accordion>
           ) : (
-            filteredAndSortedProducts.map((product) => (
+            filteredProducts.map((product) => (
               <ProductCard
                 key={product.id}
                 product={product}
@@ -144,6 +188,24 @@ const Index = () => {
           )}
         </div>
       </div>
+
+      <FloatingActionButton
+        onAddProduct={() => setShowProductForm(true)}
+        onAddCategory={() => setShowCategoryForm(true)}
+      />
+
+      <AddProductForm
+        open={showProductForm}
+        onOpenChange={setShowProductForm}
+        onAdd={handleAddProduct}
+        categories={categories}
+      />
+
+      <AddCategoryForm
+        open={showCategoryForm}
+        onOpenChange={setShowCategoryForm}
+        onAdd={handleAddCategory}
+      />
     </div>
   );
 };

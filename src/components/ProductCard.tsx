@@ -70,9 +70,6 @@ export const ProductCard = ({ product, onUpdateQuantity, onDelete, onUpdateProdu
         <div className="flex justify-between items-start gap-4">
           <div className="flex-1 min-w-0">
             <h3 className={`text-2xl font-bold truncate ${textStyle}`}>{product.name}</h3>
-            {product.category && (
-              <span className="text-sm text-muted-foreground">{product.category}</span>
-            )}
           </div>
           <div className="text-right">
             <div className={`text-3xl font-bold ${textStyle}`}>{product.quantity}</div>
