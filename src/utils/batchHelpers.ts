@@ -1,7 +1,11 @@
 import { Batch } from "@/types/batch";
 import { Product } from "@/types/product";
 
-export const calculateBatchStatus = (quantity: number, expiryDate: string): "active" | "out_of_stock" | "expired" => {
+export const calculateBatchStatus = (
+  quantity: number, 
+  expiryDate: string,
+  expiryThreshold: number = 14
+): "active" | "out_of_stock" | "expired" | "expiring_soon" => {
   if (quantity === 0) return "out_of_stock";
   
   const today = new Date();
@@ -9,13 +13,19 @@ export const calculateBatchStatus = (quantity: number, expiryDate: string): "act
   
   if (expiry < today) return "expired";
   
+  // Check if expiring soon
+  const diffTime = expiry.getTime() - today.getTime();
+  const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+  
+  if (diffDays <= expiryThreshold) return "expiring_soon";
+  
   return "active";
 };
 
-export const updateBatchStatuses = (batches: Batch[]): Batch[] => {
+export const updateBatchStatuses = (batches: Batch[], expiryThreshold: number = 14): Batch[] => {
   return batches.map(batch => ({
     ...batch,
-    status: calculateBatchStatus(batch.quantity, batch.expiryDate)
+    status: calculateBatchStatus(batch.quantity, batch.expiryDate, expiryThreshold)
   }));
 };
 
@@ -38,12 +48,12 @@ export const getEarliestExpiryDate = (batches: Batch[]): string | undefined => {
   }, activeBatches[0].expiryDate);
 };
 
-export const syncProductWithBatches = (product: Product): Product => {
+export const syncProductWithBatches = (product: Product, expiryThreshold: number = 14): Product => {
   if (!product.batches || product.batches.length === 0) {
     return product;
   }
 
-  const updatedBatches = updateBatchStatuses(product.batches);
+  const updatedBatches = updateBatchStatuses(product.batches, expiryThreshold);
   const totalQuantity = getTotalQuantityFromBatches(updatedBatches);
   const earliestExpiry = getEarliestExpiryDate(updatedBatches);
 
@@ -56,7 +66,7 @@ export const syncProductWithBatches = (product: Product): Product => {
 };
 
 // FEFO: First Expired First Out - Deduct from batches that expire soonest
-export const deductFromBatches = (batches: Batch[], quantityToDeduct: number): Batch[] => {
+export const deductFromBatches = (batches: Batch[], quantityToDeduct: number, expiryThreshold: number = 14): Batch[] => {
   if (quantityToDeduct <= 0) return batches;
 
   // Sort batches by expiry date (earliest first), exclude expired batches
@@ -88,5 +98,5 @@ export const deductFromBatches = (batches: Batch[], quantityToDeduct: number): B
     }
   }
 
-  return updateBatchStatuses(updatedBatches);
+  return updateBatchStatuses(updatedBatches, expiryThreshold);
 };

@@ -1,10 +1,10 @@
 import { Product } from "@/types/product";
 
-export const isLowStock = (quantity: number): boolean => {
-  return quantity < 10;
+export const isLowStock = (quantity: number, threshold: number = 10): boolean => {
+  return quantity < threshold;
 };
 
-export const isExpiringSoon = (expiryDate?: string): boolean => {
+export const isExpiringSoon = (expiryDate?: string, daysThreshold: number = 14): boolean => {
   if (!expiryDate) return false;
   
   const today = new Date();
@@ -12,20 +12,20 @@ export const isExpiringSoon = (expiryDate?: string): boolean => {
   const diffTime = expiry.getTime() - today.getTime();
   const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
   
-  return diffDays <= 3 && diffDays >= 0;
+  return diffDays <= daysThreshold && diffDays >= 0;
 };
 
-export const sortProducts = (products: Product[]): Product[] => {
+export const sortProducts = (products: Product[], lowStockThreshold: number = 10, expiryDays: number = 14): Product[] => {
   return [...products].sort((a, b) => {
     // Priority 1: Low stock items first
-    const aLowStock = isLowStock(a.quantity);
-    const bLowStock = isLowStock(b.quantity);
+    const aLowStock = isLowStock(a.quantity, lowStockThreshold);
+    const bLowStock = isLowStock(b.quantity, lowStockThreshold);
     if (aLowStock && !bLowStock) return -1;
     if (!aLowStock && bLowStock) return 1;
     
     // Priority 2: Expiring items next
-    const aExpiring = isExpiringSoon(a.expiryDate);
-    const bExpiring = isExpiringSoon(b.expiryDate);
+    const aExpiring = isExpiringSoon(a.expiryDate, expiryDays);
+    const bExpiring = isExpiringSoon(b.expiryDate, expiryDays);
     if (aExpiring && !bExpiring) return -1;
     if (!aExpiring && bExpiring) return 1;
     

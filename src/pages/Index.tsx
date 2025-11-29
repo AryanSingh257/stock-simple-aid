@@ -3,6 +3,7 @@ import { Product, ProductFormData } from "@/types/product";
 import { Category, CategoryFormData } from "@/types/category";
 import { syncProductWithBatches } from "@/utils/batchHelpers";
 import { useLocalStorage } from "@/hooks/useLocalStorage";
+import { useSettings } from "@/hooks/useSettings";
 import { Navigation } from "@/components/Navigation";
 import { SearchBar } from "@/components/SearchBar";
 import { AddProductForm } from "@/components/AddProductForm";
@@ -27,14 +28,15 @@ const Index = () => {
   const [searchQuery, setSearchQuery] = useState("");
   const [showProductForm, setShowProductForm] = useState(false);
   const [showCategoryForm, setShowCategoryForm] = useState(false);
+  const { settings } = useSettings();
 
   // Sync products with batches on mount and when products change
   useEffect(() => {
-    const syncedProducts = products.map(syncProductWithBatches);
+    const syncedProducts = products.map(p => syncProductWithBatches(p, settings.expiryAlertDays));
     if (JSON.stringify(syncedProducts) !== JSON.stringify(products)) {
       setProducts(syncedProducts);
     }
-  }, []);
+  }, [settings.expiryAlertDays]);
 
   const handleAddProduct = (productData: ProductFormData) => {
     const newProduct: Product = {
@@ -90,11 +92,16 @@ const Index = () => {
       );
     }
     
-    return sortProducts(filtered);
-  }, [products, searchQuery]);
+    return sortProducts(filtered, settings.lowStockThreshold, settings.expiryAlertDays);
+  }, [products, searchQuery, settings.lowStockThreshold, settings.expiryAlertDays]);
 
   // Group products by category
   const groupedProducts = useMemo(() => {
+    // If category grouping is disabled, return empty object
+    if (!settings.categoryGrouping) {
+      return {};
+    }
+
     const groups: Record<string, Product[]> = {};
     
     filteredProducts.forEach((product) => {
@@ -114,9 +121,9 @@ const Index = () => {
     });
 
     return groups;
-  }, [filteredProducts, categories]);
+  }, [filteredProducts, categories, settings.categoryGrouping]);
 
-  const hasCategories = categories.length > 0;
+  const hasCategories = categories.length > 0 && settings.categoryGrouping;
   const categoryKeys = Object.keys(groupedProducts);
 
   return (

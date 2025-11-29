@@ -1,4 +1,4 @@
-export type BatchStatus = "active" | "out_of_stock" | "expired";
+export type BatchStatus = "active" | "expiring_soon" | "out_of_stock" | "expired";
 
 export interface Batch {
   id: string;

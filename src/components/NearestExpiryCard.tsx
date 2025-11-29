@@ -4,6 +4,7 @@ import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { AlertCircle } from "lucide-react";
 import { useNavigate } from "react-router-dom";
+import { useSettings } from "@/hooks/useSettings";
 
 interface NearestExpiryCardProps {
   products: Product[];
@@ -11,6 +12,7 @@ interface NearestExpiryCardProps {
 
 export const NearestExpiryCard = ({ products }: NearestExpiryCardProps) => {
   const navigate = useNavigate();
+  const { settings } = useSettings();
 
   // Find the nearest expiring batch across all products
   const findNearestExpiryBatch = (): { product: Product; batch: Batch } | null => {
@@ -45,7 +47,7 @@ export const NearestExpiryCard = ({ products }: NearestExpiryCardProps) => {
 
   const getAlertColor = () => {
     if (daysLeft <= 7) return "bg-destructive/10 border-destructive";
-    if (daysLeft <= 14) return "bg-warning/10 border-warning";
+    if (daysLeft <= settings.expiryAlertDays) return "bg-warning/10 border-warning";
     return "bg-card border-border";
   };
 

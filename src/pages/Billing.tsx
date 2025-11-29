@@ -3,6 +3,7 @@ import { Product } from "@/types/product";
 import { Category } from "@/types/category";
 import { Sale, SaleItem } from "@/types/sale";
 import { useLocalStorage } from "@/hooks/useLocalStorage";
+import { useSettings } from "@/hooks/useSettings";
 import { deductFromBatches, syncProductWithBatches } from "@/utils/batchHelpers";
 import { Navigation } from "@/components/Navigation";
 import { SearchBar } from "@/components/SearchBar";
@@ -24,6 +25,7 @@ const Billing = () => {
   const [searchQuery, setSearchQuery] = useState("");
   const [billItems, setBillItems] = useState<SaleItem[]>([]);
   const [isSheetOpen, setIsSheetOpen] = useState(false);
+  const { settings } = useSettings();
 
   const filteredProducts = useMemo(() => {
     return products.filter(
@@ -137,15 +139,15 @@ const Billing = () => {
       const billItem = billItems.find((item) => item.productId === product.id);
       if (billItem && product.batches) {
         // Deduct from batches using FEFO
-        const updatedBatches = deductFromBatches(product.batches, billItem.quantity);
+        const updatedBatches = deductFromBatches(product.batches, billItem.quantity, settings.expiryAlertDays);
         const updatedProduct = syncProductWithBatches({
           ...product,
           batches: updatedBatches,
           purchaseCount: (product.purchaseCount || 0) + billItem.quantity,
-        });
+        }, settings.expiryAlertDays);
         
         // Show alerts
-        if (updatedProduct.quantity < 10 && updatedProduct.quantity >= 0) {
+        if (updatedProduct.quantity < settings.lowStockThreshold && updatedProduct.quantity >= 0) {
           toast.warning(`Low stock alert: ${product.name} (${updatedProduct.quantity} left)`);
         }
         
@@ -153,7 +155,7 @@ const Billing = () => {
           const today = new Date();
           const expiry = new Date(updatedProduct.expiryDate);
           const diffDays = Math.ceil((expiry.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
-          if (diffDays <= 14 && diffDays >= 0) {
+          if (diffDays <= settings.expiryAlertDays && diffDays >= 0) {
             toast.warning(`Near expiry: ${product.name} (${diffDays} days)`);
           }
         }
