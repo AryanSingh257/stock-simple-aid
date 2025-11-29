@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Minus, Plus, Trash2, ChevronDown, ChevronUp } from "lucide-react";
 import { isLowStock, isExpiringSoon } from "@/utils/productHelpers";
+import { useSettings } from "@/hooks/useSettings";
 import { BatchManagement } from "./BatchManagement";
 import { syncProductWithBatches } from "@/utils/batchHelpers";
 import {
@@ -28,8 +29,9 @@ interface ProductCardProps {
 
 export const ProductCard = ({ product, onUpdateQuantity, onDelete, onUpdateProduct }: ProductCardProps) => {
   const [showBatches, setShowBatches] = useState(false);
-  const lowStock = isLowStock(product.quantity);
-  const expiring = isExpiringSoon(product.expiryDate);
+  const { settings } = useSettings();
+  const lowStock = isLowStock(product.quantity, settings.lowStockThreshold);
+  const expiring = isExpiringSoon(product.expiryDate, settings.expiryAlertDays);
   const isZeroQuantity = product.quantity === 0;
   
   const cardClass = lowStock 
@@ -51,7 +53,7 @@ export const ProductCard = ({ product, onUpdateQuantity, onDelete, onUpdateProdu
       ...product,
       batches: [...(product.batches || []), batch],
     };
-    const syncedProduct = syncProductWithBatches(updatedProduct);
+    const syncedProduct = syncProductWithBatches(updatedProduct, settings.expiryAlertDays);
     onUpdateProduct(syncedProduct);
   };
 
@@ -60,7 +62,7 @@ export const ProductCard = ({ product, onUpdateQuantity, onDelete, onUpdateProdu
       ...product,
       batches: (product.batches || []).map(b => b.id === updatedBatch.id ? updatedBatch : b),
     };
-    const syncedProduct = syncProductWithBatches(updatedProduct);
+    const syncedProduct = syncProductWithBatches(updatedProduct, settings.expiryAlertDays);
     onUpdateProduct(syncedProduct);
   };
 

@@ -17,31 +17,19 @@ export const BatchCard = ({ batch, onEdit }: BatchCardProps) => {
   const getStatusColor = () => {
     if (batch.status === "expired") return "bg-red-100 border-red-400 text-red-900";
     if (batch.status === "out_of_stock") return "bg-gray-100 border-gray-400 text-gray-700";
-    
-    // Check if expiring soon (within 14 days)
-    const today = new Date();
-    const expiry = new Date(batch.expiryDate);
-    const diffDays = Math.ceil((expiry.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
-    
-    if (diffDays <= 14 && diffDays >= 0) {
-      return "bg-orange-100 border-orange-400 text-orange-900";
-    }
-    
+    if (batch.status === "expiring_soon") return "bg-orange-100 border-orange-400 text-orange-900";
     return "bg-green-100 border-green-400 text-green-900";
   };
 
   const getStatusText = () => {
     if (batch.status === "expired") return "Expired";
     if (batch.status === "out_of_stock") return "Out of Stock";
-    
-    const today = new Date();
-    const expiry = new Date(batch.expiryDate);
-    const diffDays = Math.ceil((expiry.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
-    
-    if (diffDays <= 14 && diffDays >= 0) {
+    if (batch.status === "expiring_soon") {
+      const today = new Date();
+      const expiry = new Date(batch.expiryDate);
+      const diffDays = Math.ceil((expiry.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
       return `Expiring Soon (${diffDays} days)`;
     }
-    
     return "Fresh";
   };
 

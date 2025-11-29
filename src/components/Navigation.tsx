@@ -1,6 +1,6 @@
 import { Link, useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { Package, ShoppingCart, History } from "lucide-react";
+import { Package, ShoppingCart, History, Settings } from "lucide-react";
 
 export const Navigation = () => {
   const location = useLocation();
@@ -37,6 +37,15 @@ export const Navigation = () => {
         >
           <History className="h-5 w-5 mr-2" />
           Sales
+        </Button>
+      </Link>
+      <Link to="/settings">
+        <Button 
+          variant={isActive("/settings") ? "default" : "outline"}
+          size="icon"
+          className="h-16 w-16"
+        >
+          <Settings className="h-5 w-5" />
         </Button>
       </Link>
     </nav>
