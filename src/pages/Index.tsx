@@ -18,8 +18,7 @@ import {
   AccordionItem,
   AccordionTrigger,
 } from "@/components/ui/accordion";
-import { sortProducts, exportToCSV } from "@/utils/productHelpers";
-import { Download } from "lucide-react";
+import { sortProducts } from "@/utils/productHelpers";
 import { toast } from "sonner";
 
 const Index = () => {
@@ -72,15 +71,6 @@ const Index = () => {
   const handleDeleteProduct = (id: string) => {
     setProducts(products.filter((p) => p.id !== id));
     toast.success("Product deleted");
-  };
-
-  const handleExport = () => {
-    if (products.length === 0) {
-      toast.error("No products to export");
-      return;
-    }
-    exportToCSV(products);
-    toast.success("Inventory exported successfully");
   };
 
   const filteredProducts = useMemo(() => {
@@ -139,18 +129,6 @@ const Index = () => {
         <NearestExpiryCard products={products} />
 
         <SearchBar value={searchQuery} onChange={setSearchQuery} />
-
-        {products.length > 0 && (
-          <Button
-            onClick={handleExport}
-            variant="outline"
-            size="lg"
-            className="w-full h-14 mb-6 text-lg"
-          >
-            <Download className="h-5 w-5 mr-2" />
-            Export to CSV
-          </Button>
-        )}
 
         <div className="space-y-4">
           {filteredProducts.length === 0 ? (
