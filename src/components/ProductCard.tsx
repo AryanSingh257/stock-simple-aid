@@ -1,34 +1,33 @@
 import { useState } from "react";
 import { Product } from "@/types/product";
+import { Category } from "@/types/category";
 import { Batch } from "@/types/batch";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { Minus, Plus, Trash2, ChevronDown, ChevronUp } from "lucide-react";
+import { Minus, Plus, Settings2, ChevronDown, ChevronUp } from "lucide-react";
 import { isLowStock, isExpiringSoon } from "@/utils/productHelpers";
 import { useSettings } from "@/hooks/useSettings";
 import { BatchManagement } from "./BatchManagement";
+import { EditProductForm } from "./EditProductForm";
 import { syncProductWithBatches } from "@/utils/batchHelpers";
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-  AlertDialogTrigger,
-} from "@/components/ui/alert-dialog";
 
 interface ProductCardProps {
   product: Product;
   onUpdateQuantity: (id: string, delta: number) => void;
   onDelete: (id: string) => void;
   onUpdateProduct: (product: Product) => void;
+  categories?: Category[];
 }
 
-export const ProductCard = ({ product, onUpdateQuantity, onDelete, onUpdateProduct }: ProductCardProps) => {
+export const ProductCard = ({ 
+  product, 
+  onUpdateQuantity, 
+  onDelete, 
+  onUpdateProduct,
+  categories = [],
+}: ProductCardProps) => {
   const [showBatches, setShowBatches] = useState(false);
+  const [showEditForm, setShowEditForm] = useState(false);
   const { settings } = useSettings();
   const lowStock = isLowStock(product.quantity, settings.lowStockThreshold);
   const expiring = isExpiringSoon(product.expiryDate, settings.expiryAlertDays);
@@ -78,12 +77,22 @@ export const ProductCard = ({ product, onUpdateQuantity, onDelete, onUpdateProdu
   const nearestExpiryDays = product.expiryDate ? getDaysUntilExpiry(product.expiryDate) : null;
 
   return (
-    <Card className={`p-6 ${cardClass}`}>
-      <div className="space-y-4">
-        <div className="flex justify-between items-start gap-4">
-          <div className="flex-1 min-w-0">
-            <div className="flex items-center gap-2 flex-wrap">
-              <h3 className={`text-2xl font-bold truncate ${textStyle}`}>{product.name}</h3>
+    <>
+      <Card className={`p-6 relative ${cardClass}`}>
+        <Button
+          onClick={() => setShowEditForm(true)}
+          variant="ghost"
+          size="sm"
+          className="absolute top-2 right-2 h-8 w-8 p-0"
+        >
+          <Settings2 className="h-4 w-4" />
+        </Button>
+
+        <div className="space-y-4">
+          <div className="flex justify-between items-start gap-4">
+            <div className="flex-1 min-w-0 pr-8">
+              <div className="flex items-center gap-2 flex-wrap">
+                <h3 className={`text-2xl font-bold truncate ${textStyle}`}>{product.name}</h3>
               {product.batches && product.batches.length > 0 && (
                 <span className="px-2 py-1 bg-primary/10 text-primary text-sm font-medium rounded">
                   {product.batches.length} {product.batches.length === 1 ? 'batch' : 'batches'}
@@ -170,6 +179,9 @@ export const ProductCard = ({ product, onUpdateQuantity, onDelete, onUpdateProdu
                   batches={product.batches}
                   onAddBatch={handleAddBatch}
                   onUpdateBatch={handleUpdateBatch}
+                  productDuration={product.duration}
+                  productDurationUnit={product.durationUnit}
+                  productCostPrice={product.costPrice}
                 />
               </div>
             )}
@@ -182,6 +194,9 @@ export const ProductCard = ({ product, onUpdateQuantity, onDelete, onUpdateProdu
               batches={[]}
               onAddBatch={handleAddBatch}
               onUpdateBatch={handleUpdateBatch}
+              productDuration={product.duration}
+              productDurationUnit={product.durationUnit}
+              productCostPrice={product.costPrice}
             />
           </div>
         )}
@@ -206,36 +221,17 @@ export const ProductCard = ({ product, onUpdateQuantity, onDelete, onUpdateProdu
             Increase
           </Button>
         </div>
+        </div>
+      </Card>
 
-        <AlertDialog>
-          <AlertDialogTrigger asChild>
-            <Button
-              variant="outline"
-              className="w-full h-12 text-destructive border-destructive hover:bg-destructive hover:text-destructive-foreground"
-            >
-              <Trash2 className="h-5 w-5 mr-2" />
-              Delete Product
-            </Button>
-          </AlertDialogTrigger>
-          <AlertDialogContent>
-            <AlertDialogHeader>
-              <AlertDialogTitle>Delete {product.name}?</AlertDialogTitle>
-              <AlertDialogDescription className="text-base">
-                This will permanently remove this product from your inventory. This action cannot be undone.
-              </AlertDialogDescription>
-            </AlertDialogHeader>
-            <AlertDialogFooter>
-              <AlertDialogCancel className="h-12 text-lg">Cancel</AlertDialogCancel>
-              <AlertDialogAction
-                onClick={() => onDelete(product.id)}
-                className="h-12 text-lg bg-destructive hover:bg-destructive/90"
-              >
-                Delete
-              </AlertDialogAction>
-            </AlertDialogFooter>
-          </AlertDialogContent>
-        </AlertDialog>
-      </div>
-    </Card>
+      <EditProductForm
+        open={showEditForm}
+        onOpenChange={setShowEditForm}
+        product={product}
+        onUpdate={onUpdateProduct}
+        onDelete={onDelete}
+        categories={categories}
+      />
+    </>
   );
 };
