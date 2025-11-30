@@ -26,21 +26,23 @@ interface BatchManagementProps {
   batches: Batch[];
   onAddBatch: (batch: Batch) => void;
   onUpdateBatch: (batch: Batch) => void;
+  productDuration?: number;
+  productDurationUnit?: "days" | "weeks" | "months";
+  productCostPrice?: number;
 }
 
-export const BatchManagement = ({ batches, onAddBatch, onUpdateBatch }: BatchManagementProps) => {
+export const BatchManagement = ({ 
+  batches, 
+  onAddBatch, 
+  onUpdateBatch,
+  productDuration,
+  productDurationUnit = "days",
+  productCostPrice,
+}: BatchManagementProps) => {
   const [open, setOpen] = useState(false);
   const [editingBatch, setEditingBatch] = useState<Batch | null>(null);
-  const [formData, setFormData] = useState<{
-    quantity: number;
-    duration: number;
-    durationUnit: "days" | "weeks" | "months";
-    costPrice: number | undefined;
-  }>({
+  const [formData, setFormData] = useState<{ quantity: number }>({
     quantity: 0,
-    duration: 0,
-    durationUnit: "days",
-    costPrice: undefined,
   });
 
   const calculateExpiryDate = (duration: number, unit: "days" | "weeks" | "months"): string => {
@@ -69,25 +71,25 @@ export const BatchManagement = ({ batches, onAddBatch, onUpdateBatch }: BatchMan
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (formData.quantity < 0) {
-      toast.error("Quantity cannot be negative");
+    if (formData.quantity <= 0) {
+      toast.error("Quantity must be greater than 0");
       return;
     }
 
-    if (!formData.duration || formData.duration <= 0) {
-      toast.error("Duration must be greater than 0");
+    if (!productDuration || productDuration <= 0) {
+      toast.error("Product shelf life not set. Please edit product details first.");
       return;
     }
 
-    const expiryDate = calculateExpiryDate(formData.duration, formData.durationUnit);
+    const expiryDate = calculateExpiryDate(productDuration, productDurationUnit);
     
     if (editingBatch) {
       const updatedBatch: Batch = {
         ...editingBatch,
         quantity: formData.quantity,
-        duration: formData.duration,
-        durationUnit: formData.durationUnit,
-        costPrice: formData.costPrice,
+        duration: productDuration,
+        durationUnit: productDurationUnit,
+        costPrice: productCostPrice,
         expiryDate,
         status: calculateStatus(formData.quantity, expiryDate),
       };
@@ -97,9 +99,9 @@ export const BatchManagement = ({ batches, onAddBatch, onUpdateBatch }: BatchMan
       const newBatch: Batch = {
         id: crypto.randomUUID(),
         quantity: formData.quantity,
-        duration: formData.duration,
-        durationUnit: formData.durationUnit,
-        costPrice: formData.costPrice,
+        duration: productDuration,
+        durationUnit: productDurationUnit,
+        costPrice: productCostPrice,
         expiryDate,
         status: calculateStatus(formData.quantity, expiryDate),
         dateAdded: new Date().toISOString(),
@@ -108,7 +110,7 @@ export const BatchManagement = ({ batches, onAddBatch, onUpdateBatch }: BatchMan
       toast.success("Batch added successfully");
     }
 
-    setFormData({ quantity: 0, duration: 0, durationUnit: "days", costPrice: undefined });
+    setFormData({ quantity: 0 });
     setEditingBatch(null);
     setOpen(false);
   };
@@ -117,9 +119,6 @@ export const BatchManagement = ({ batches, onAddBatch, onUpdateBatch }: BatchMan
     setEditingBatch(batch);
     setFormData({
       quantity: batch.quantity,
-      duration: batch.duration,
-      durationUnit: batch.durationUnit,
-      costPrice: batch.costPrice,
     });
     setOpen(true);
   };
@@ -127,7 +126,7 @@ export const BatchManagement = ({ batches, onAddBatch, onUpdateBatch }: BatchMan
   const handleClose = () => {
     setOpen(false);
     setEditingBatch(null);
-    setFormData({ quantity: 0, duration: 0, durationUnit: "days", costPrice: undefined });
+    setFormData({ quantity: 0 });
   };
 
   const handleOpenChange = (isOpen: boolean) => {
@@ -163,58 +162,35 @@ export const BatchManagement = ({ batches, onAddBatch, onUpdateBatch }: BatchMan
                 <Input
                   id="quantity"
                   type="number"
-                  min="0"
-                  value={formData.quantity}
-                  onChange={(e) => setFormData({ ...formData, quantity: parseInt(e.target.value) || 0 })}
+                  min="1"
+                  value={formData.quantity || ""}
+                  onChange={(e) => setFormData({ quantity: parseInt(e.target.value) || 0 })}
                   placeholder="Enter quantity"
                   className="h-12 text-lg"
                   required
                 />
               </div>
 
-              <div className="space-y-2">
-                <Label className="text-lg">How long does this product last? *</Label>
-                <div className="flex gap-2">
-                  <Input
-                    type="number"
-                    min="1"
-                    value={formData.duration}
-                    onChange={(e) => setFormData({ ...formData, duration: parseInt(e.target.value) || 0 })}
-                    placeholder="Duration"
-                    className="h-12 text-lg flex-1"
-                    required
-                  />
-                  <Select
-                    value={formData.durationUnit}
-                    onValueChange={(value) =>
-                      setFormData({ ...formData, durationUnit: value as "days" | "weeks" | "months" })
-                    }
-                  >
-                    <SelectTrigger className="h-12 text-lg w-32">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent className="bg-popover">
-                      <SelectItem value="days" className="text-lg">Days</SelectItem>
-                      <SelectItem value="weeks" className="text-lg">Weeks</SelectItem>
-                      <SelectItem value="months" className="text-lg">Months</SelectItem>
-                    </SelectContent>
-                  </Select>
+              {productDuration && productDuration > 0 && (
+                <div className="bg-muted p-3 rounded-lg">
+                  <p className="text-sm text-muted-foreground">
+                    Shelf life: <span className="font-semibold">{productDuration} {productDurationUnit}</span>
+                  </p>
+                  {productCostPrice && (
+                    <p className="text-sm text-muted-foreground">
+                      Cost price: <span className="font-semibold">₹{productCostPrice.toFixed(2)}</span>
+                    </p>
+                  )}
                 </div>
-              </div>
+              )}
 
-              <div className="space-y-2">
-                <Label htmlFor="costPrice" className="text-lg">Cost Price (Optional)</Label>
-                <Input
-                  id="costPrice"
-                  type="number"
-                  min="0"
-                  step="0.01"
-                  value={formData.costPrice || ""}
-                  onChange={(e) => setFormData({ ...formData, costPrice: parseFloat(e.target.value) || undefined })}
-                  placeholder="₹ 0.00"
-                  className="h-12 text-lg"
-                />
-              </div>
+              {(!productDuration || productDuration <= 0) && (
+                <div className="bg-destructive/10 border border-destructive p-3 rounded-lg">
+                  <p className="text-sm text-destructive">
+                    Product shelf life not set. Please edit product details to add shelf life before creating batches.
+                  </p>
+                </div>
+              )}
 
               <div className="flex gap-3 pt-4">
                 <Button

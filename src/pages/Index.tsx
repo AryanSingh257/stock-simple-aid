@@ -153,6 +153,7 @@ const Index = () => {
                           onUpdateQuantity={handleUpdateQuantity}
                           onDelete={handleDeleteProduct}
                           onUpdateProduct={handleUpdateProduct}
+                          categories={categories}
                         />
                       ))}
                     </div>
@@ -168,6 +169,7 @@ const Index = () => {
                 onUpdateQuantity={handleUpdateQuantity}
                 onDelete={handleDeleteProduct}
                 onUpdateProduct={handleUpdateProduct}
+                categories={categories}
               />
             ))
           )}

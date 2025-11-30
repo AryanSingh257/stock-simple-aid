@@ -11,6 +11,8 @@ export interface Product {
   purchaseCount?: number;
   createdAt: string;
   batches?: Batch[];
+  duration?: number;
+  durationUnit?: "days" | "weeks" | "months";
 }
 
 export type ProductFormData = Omit<Product, "id" | "createdAt">;

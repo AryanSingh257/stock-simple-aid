@@ -98,5 +98,7 @@ export const deductFromBatches = (batches: Batch[], quantityToDeduct: number, ex
     }
   }
 
-  return updateBatchStatuses(updatedBatches, expiryThreshold);
+  // Update statuses and filter out zero-quantity batches
+  const batchesWithStatus = updateBatchStatuses(updatedBatches, expiryThreshold);
+  return batchesWithStatus.filter(batch => batch.quantity > 0);
 };

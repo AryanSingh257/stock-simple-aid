@@ -82,7 +82,9 @@ export const AddProductForm = ({ open, onOpenChange, onAdd, categories }: AddPro
     onAdd({ 
       ...formData, 
       expiryDate: calculatedExpiryDate,
-      batches: initialBatch ? [initialBatch] : []
+      batches: initialBatch ? [initialBatch] : [],
+      duration: shelfLifeDuration && shelfLifeDuration > 0 ? shelfLifeDuration : undefined,
+      durationUnit: shelfLifeDuration && shelfLifeDuration > 0 ? shelfLifeUnit : undefined,
     });
     setFormData({
       name: "",
