@@ -66,12 +66,35 @@ export const ProductCard = ({ product, onUpdateQuantity, onDelete, onUpdateProdu
     onUpdateProduct(syncedProduct);
   };
 
+  const getDaysUntilExpiry = (dateString?: string) => {
+    if (!dateString) return null;
+    const today = new Date();
+    const expiry = new Date(dateString);
+    const diffTime = expiry.getTime() - today.getTime();
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+    return diffDays;
+  };
+
+  const nearestExpiryDays = product.expiryDate ? getDaysUntilExpiry(product.expiryDate) : null;
+
   return (
     <Card className={`p-6 ${cardClass}`}>
       <div className="space-y-4">
         <div className="flex justify-between items-start gap-4">
           <div className="flex-1 min-w-0">
-            <h3 className={`text-2xl font-bold truncate ${textStyle}`}>{product.name}</h3>
+            <div className="flex items-center gap-2 flex-wrap">
+              <h3 className={`text-2xl font-bold truncate ${textStyle}`}>{product.name}</h3>
+              {product.batches && product.batches.length > 0 && (
+                <span className="px-2 py-1 bg-primary/10 text-primary text-sm font-medium rounded">
+                  {product.batches.length} {product.batches.length === 1 ? 'batch' : 'batches'}
+                </span>
+              )}
+            </div>
+            {!showBatches && product.batches && product.batches.length > 0 && nearestExpiryDays !== null && (
+              <div className="text-sm text-muted-foreground mt-1">
+                Next expiry: {nearestExpiryDays > 0 ? `${nearestExpiryDays} days` : 'Today'}
+              </div>
+            )}
           </div>
           <div className="text-right">
             <div className={`text-3xl font-bold ${textStyle}`}>{product.quantity}</div>

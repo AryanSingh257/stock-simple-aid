@@ -15,10 +15,10 @@ export const BatchCard = ({ batch, onEdit }: BatchCardProps) => {
   };
 
   const getStatusColor = () => {
-    if (batch.status === "expired") return "bg-red-100 border-red-400 text-red-900";
-    if (batch.status === "out_of_stock") return "bg-gray-100 border-gray-400 text-gray-700";
-    if (batch.status === "expiring_soon") return "bg-orange-100 border-orange-400 text-orange-900";
-    return "bg-green-100 border-green-400 text-green-900";
+    if (batch.status === "expired") return "bg-destructive/10 border-destructive text-destructive";
+    if (batch.status === "out_of_stock") return "bg-muted border-muted-foreground/30 text-muted-foreground";
+    if (batch.status === "expiring_soon") return "bg-expiring border-expiring-border text-expiring-foreground";
+    return "bg-success/10 border-success text-success";
   };
 
   const getStatusText = () => {
@@ -34,39 +34,37 @@ export const BatchCard = ({ batch, onEdit }: BatchCardProps) => {
   };
 
   return (
-    <Card className={`p-4 border-2 ${getStatusColor()}`}>
-      <div className="flex justify-between items-start mb-3">
-        <div className="flex-1">
-          <div className="flex items-center gap-2 mb-2">
-            <span className="text-sm font-bold">{getStatusText()}</span>
-          </div>
-          <div className="space-y-1 text-sm">
-            <p>
-              <span className="font-medium">Quantity:</span> {batch.quantity}
-            </p>
-            <p>
-              <span className="font-medium">Expires:</span> {formatDate(batch.expiryDate)}
-            </p>
-            <p>
-              <span className="font-medium">Shelf Life:</span> {batch.duration} {batch.durationUnit}
-            </p>
+    <Card className={`p-3 border-2 ${getStatusColor()}`}>
+      <div className="flex justify-between items-start gap-3">
+        <div className="flex-1 min-w-0">
+          <div className="font-semibold text-sm mb-2">{getStatusText()}</div>
+          <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-xs">
+            <div>
+              <span className="text-muted-foreground">Qty:</span> <span className="font-medium">{batch.quantity}</span>
+            </div>
+            <div>
+              <span className="text-muted-foreground">Expires:</span> <span className="font-medium">{formatDate(batch.expiryDate)}</span>
+            </div>
+            <div>
+              <span className="text-muted-foreground">Shelf Life:</span> <span className="font-medium">{batch.duration} {batch.durationUnit}</span>
+            </div>
             {batch.costPrice && (
-              <p>
-                <span className="font-medium">Cost:</span> ₹{batch.costPrice.toFixed(2)}
-              </p>
+              <div>
+                <span className="text-muted-foreground">Cost:</span> <span className="font-medium">₹{batch.costPrice.toFixed(2)}</span>
+              </div>
             )}
-            <p className="text-xs opacity-75">
+            <div className="col-span-2 text-muted-foreground/70 mt-1">
               Added: {formatDate(batch.dateAdded)}
-            </p>
+            </div>
           </div>
         </div>
         <Button
           onClick={() => onEdit(batch)}
           variant="ghost"
           size="sm"
-          className="h-8 w-8 p-0"
+          className="h-7 w-7 p-0 flex-shrink-0"
         >
-          <Pencil className="h-4 w-4" />
+          <Pencil className="h-3 w-3" />
         </Button>
       </div>
     </Card>
