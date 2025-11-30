@@ -130,11 +130,18 @@ export const BatchManagement = ({ batches, onAddBatch, onUpdateBatch }: BatchMan
     setFormData({ quantity: 0, duration: 0, durationUnit: "days", costPrice: undefined });
   };
 
+  const handleOpenChange = (isOpen: boolean) => {
+    setOpen(isOpen);
+    if (!isOpen) {
+      handleClose();
+    }
+  };
+
   return (
     <div className="space-y-4">
       <div className="flex justify-between items-center">
         <h3 className="text-xl font-bold">Batches</h3>
-        <Dialog open={open} onOpenChange={(isOpen) => !isOpen && handleClose()}>
+        <Dialog open={open} onOpenChange={handleOpenChange}>
           <DialogTrigger asChild>
             <Button size="sm" className="h-10">
               <Plus className="h-4 w-4 mr-2" />
