@@ -101,10 +101,10 @@ export const EditProductForm = ({
   return (
     <>
       <Dialog open={open} onOpenChange={onOpenChange}>
-        <DialogContent className="max-w-2xl">
+        <DialogContent className="max-w-2xl w-[95vw] max-h-[90vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle className="text-2xl">Edit Product</DialogTitle>
-            <DialogDescription className="text-base">
+            <DialogTitle className="text-xl md:text-2xl">Edit Product</DialogTitle>
+            <DialogDescription className="text-sm md:text-base">
               Update product details below
             </DialogDescription>
           </DialogHeader>

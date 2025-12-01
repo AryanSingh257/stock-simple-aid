@@ -93,31 +93,31 @@ const SalesHistory = () => {
   }, [revenueData]);
 
   return (
-    <div className="min-h-screen bg-background p-4 md:p-8">
+    <div className="min-h-screen bg-background p-3 sm:p-4 md:p-8">
       <div className="max-w-4xl mx-auto">
-        <div className="mb-8">
-          <h1 className="text-4xl font-bold mb-2">Sales & Revenue</h1>
-          <p className="text-xl text-muted-foreground">Track your business performance</p>
+        <div className="mb-6 md:mb-8">
+          <h1 className="text-3xl md:text-4xl font-bold mb-2">Sales & Revenue</h1>
+          <p className="text-lg md:text-xl text-muted-foreground">Track your business performance</p>
         </div>
 
         <Navigation />
 
         {sales.length === 0 ? (
-          <div className="text-center py-16">
-            <p className="text-2xl text-muted-foreground">No sales yet</p>
+          <div className="text-center py-12 md:py-16">
+            <p className="text-xl md:text-2xl text-muted-foreground">No sales yet</p>
           </div>
         ) : (
           <>
             {/* Revenue Analytics Section */}
-            <Card className="p-6 mb-8">
-              <div className="mb-6">
-                <h2 className="text-2xl font-bold mb-4">Revenue Analytics</h2>
-                <div className="flex gap-3 mb-6">
+            <Card className="p-4 md:p-6 mb-6 md:mb-8">
+              <div className="mb-4 md:mb-6">
+                <h2 className="text-xl md:text-2xl font-bold mb-3 md:mb-4">Revenue Analytics</h2>
+                <div className="flex gap-2 md:gap-3 mb-4 md:mb-6">
                   <Button
                     variant={timePeriod === "daily" ? "default" : "outline"}
                     size="lg"
                     onClick={() => setTimePeriod("daily")}
-                    className="flex-1 h-14 text-lg"
+                    className="flex-1 h-12 md:h-14 text-base md:text-lg"
                   >
                     Daily
                   </Button>
@@ -125,7 +125,7 @@ const SalesHistory = () => {
                     variant={timePeriod === "monthly" ? "default" : "outline"}
                     size="lg"
                     onClick={() => setTimePeriod("monthly")}
-                    className="flex-1 h-14 text-lg"
+                    className="flex-1 h-12 md:h-14 text-base md:text-lg"
                   >
                     Monthly
                   </Button>
@@ -133,7 +133,7 @@ const SalesHistory = () => {
                     variant={timePeriod === "yearly" ? "default" : "outline"}
                     size="lg"
                     onClick={() => setTimePeriod("yearly")}
-                    className="flex-1 h-14 text-lg"
+                    className="flex-1 h-12 md:h-14 text-base md:text-lg"
                   >
                     Yearly
                   </Button>
@@ -141,25 +141,29 @@ const SalesHistory = () => {
               </div>
 
               {/* Total Revenue Summary */}
-              <div className="mb-6 p-4 bg-secondary rounded-lg">
-                <p className="text-lg text-muted-foreground mb-1">Total Revenue</p>
-                <p className="text-4xl font-bold">₹{totalRevenue.toFixed(2)}</p>
+              <div className="mb-4 md:mb-6 p-3 md:p-4 bg-secondary rounded-lg">
+                <p className="text-base md:text-lg text-muted-foreground mb-1">Total Revenue</p>
+                <p className="text-3xl md:text-4xl font-bold">₹{totalRevenue.toFixed(2)}</p>
               </div>
 
               {/* Revenue Chart */}
-              <div className="h-[300px] w-full">
-                <ResponsiveContainer width="100%" height="100%">
-                  <LineChart data={revenueData}>
+              <div className="h-[250px] sm:h-[300px] w-full overflow-x-auto">
+                <ResponsiveContainer width="100%" height="100%" minWidth={300}>
+                  <LineChart data={revenueData} margin={{ top: 5, right: 10, left: 0, bottom: 5 }}>
                     <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
                     <XAxis 
                       dataKey="date" 
                       stroke="hsl(var(--foreground))"
-                      style={{ fontSize: '14px' }}
+                      style={{ fontSize: '12px' }}
+                      angle={-45}
+                      textAnchor="end"
+                      height={60}
                     />
                     <YAxis 
                       stroke="hsl(var(--foreground))"
-                      style={{ fontSize: '14px' }}
+                      style={{ fontSize: '12px' }}
                       tickFormatter={(value) => `₹${value}`}
+                      width={50}
                     />
                     <Tooltip 
                       contentStyle={{
@@ -183,34 +187,34 @@ const SalesHistory = () => {
             </Card>
 
             {/* Sales History Section */}
-            <div className="mb-4">
-              <h2 className="text-2xl font-bold mb-4">Sales History</h2>
+            <div className="mb-3 md:mb-4">
+              <h2 className="text-xl md:text-2xl font-bold mb-3 md:mb-4">Sales History</h2>
             </div>
-            <div className="space-y-4 max-h-[600px] overflow-y-auto pr-2">
+            <div className="space-y-3 md:space-y-4 max-h-[500px] md:max-h-[600px] overflow-y-auto pr-1 md:pr-2">
               {sales.slice().reverse().map((sale) => (
-                <Card key={sale.id} className="p-6">
-                  <div className="flex justify-between items-start mb-4">
+                <Card key={sale.id} className="p-4 md:p-6">
+                  <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start mb-3 md:mb-4 gap-2">
                     <div>
-                      <p className="text-2xl font-semibold">
+                      <p className="text-xl md:text-2xl font-semibold">
                         {formatDate(sale.timestamp)}
                       </p>
-                      <p className="text-lg text-muted-foreground">
+                      <p className="text-base md:text-lg text-muted-foreground">
                         {formatTime(sale.timestamp)}
                       </p>
                     </div>
-                    <div className="text-right">
-                      <p className="text-3xl font-bold">₹{sale.totalAmount.toFixed(2)}</p>
+                    <div className="text-left sm:text-right">
+                      <p className="text-2xl md:text-3xl font-bold">₹{sale.totalAmount.toFixed(2)}</p>
                     </div>
                   </div>
 
-                  <div className="border-t pt-4">
-                    <p className="text-lg mb-3">
+                  <div className="border-t pt-3 md:pt-4">
+                    <p className="text-base md:text-lg mb-2 md:mb-3">
                       <span className="font-semibold">{sale.itemCount}</span> items sold
                     </p>
                     <div className="space-y-2">
                       {sale.items.map((item, index) => (
-                        <div key={index} className="flex justify-between text-base">
-                          <span>
+                        <div key={index} className="flex flex-col sm:flex-row sm:justify-between text-sm md:text-base gap-1">
+                          <span className="break-words">
                             {item.name} <span className="text-muted-foreground">× {item.quantity}</span>
                           </span>
                           <span className="font-semibold">₹{item.subtotal.toFixed(2)}</span>
