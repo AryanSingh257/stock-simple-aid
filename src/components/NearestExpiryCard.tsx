@@ -52,19 +52,19 @@ export const NearestExpiryCard = ({ products }: NearestExpiryCardProps) => {
   };
 
   return (
-    <Card className={`p-6 border-2 ${getAlertColor()} mb-6`}>
-      <div className="flex items-start gap-4">
-        <AlertCircle className="h-6 w-6 text-destructive flex-shrink-0 mt-1" />
-        <div className="flex-1">
-          <h3 className="text-xl font-bold mb-3">Nearest Expiry Batch</h3>
-          <div className="space-y-2">
-            <p className="text-lg">
+    <Card className={`p-4 md:p-6 border-2 ${getAlertColor()} mb-4 md:mb-6`}>
+      <div className="flex flex-col sm:flex-row items-start gap-3 md:gap-4">
+        <AlertCircle className="h-5 w-5 md:h-6 md:w-6 text-destructive flex-shrink-0 mt-1" />
+        <div className="flex-1 w-full">
+          <h3 className="text-lg md:text-xl font-bold mb-2 md:mb-3">Nearest Expiry Batch</h3>
+          <div className="space-y-1 md:space-y-2">
+            <p className="text-base md:text-lg break-words">
               <span className="font-semibold">Product:</span> {product.name}
             </p>
-            <p className="text-lg">
+            <p className="text-base md:text-lg">
               <span className="font-semibold">Days Left:</span> {daysLeft} {daysLeft === 1 ? "day" : "days"}
             </p>
-            <p className="text-lg">
+            <p className="text-base md:text-lg">
               <span className="font-semibold">Quantity:</span> {batch.quantity}
             </p>
           </div>
@@ -72,7 +72,7 @@ export const NearestExpiryCard = ({ products }: NearestExpiryCardProps) => {
             onClick={() => navigate("/")}
             variant="outline"
             size="lg"
-            className="mt-4 h-12 text-lg"
+            className="mt-3 md:mt-4 h-10 md:h-12 text-base md:text-lg w-full sm:w-auto"
           >
             View Product
           </Button>

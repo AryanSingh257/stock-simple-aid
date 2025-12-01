@@ -147,12 +147,12 @@ export const BatchManagement = ({
               Add Batch
             </Button>
           </DialogTrigger>
-          <DialogContent className="max-w-2xl">
+          <DialogContent className="max-w-2xl w-[95vw] max-h-[90vh] overflow-y-auto">
             <DialogHeader>
-              <DialogTitle className="text-2xl">
+              <DialogTitle className="text-xl md:text-2xl">
                 {editingBatch ? "Edit Batch" : "Add New Batch"}
               </DialogTitle>
-              <DialogDescription className="text-base">
+              <DialogDescription className="text-sm md:text-base">
                 Enter batch details below
               </DialogDescription>
             </DialogHeader>

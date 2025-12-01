@@ -116,11 +116,11 @@ export const AddProductForm = ({ open, onOpenChange, onAdd, categories }: AddPro
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
-      <SheetContent side="bottom" className="h-[90vh] overflow-y-auto">
+      <SheetContent side="bottom" className="h-[92vh] md:h-[90vh] overflow-y-auto p-4 md:p-6">
         <SheetHeader>
-          <SheetTitle className="text-3xl font-bold">Add New Product</SheetTitle>
+          <SheetTitle className="text-2xl md:text-3xl font-bold">Add New Product</SheetTitle>
         </SheetHeader>
-        <form onSubmit={handleSubmit} className="space-y-6 pt-6">
+        <form onSubmit={handleSubmit} className="space-y-4 md:space-y-6 pt-4 md:pt-6">
           <div className="space-y-2">
             <Label htmlFor="name" className="text-xl">Product Name *</Label>
             <Input

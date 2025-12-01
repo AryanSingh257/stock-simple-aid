@@ -70,21 +70,21 @@ const Settings = () => {
   };
 
   return (
-    <div className="min-h-screen bg-background p-4 md:p-6">
+    <div className="min-h-screen bg-background p-3 sm:p-4 md:p-6">
       <div className="max-w-2xl mx-auto">
-        <div className="flex items-center gap-4 mb-6">
+        <div className="flex items-center gap-3 md:gap-4 mb-4 md:mb-6">
           <Button
             variant="outline"
             size="icon"
             onClick={() => navigate("/")}
-            className="h-12 w-12"
+            className="h-10 w-10 md:h-12 md:w-12"
           >
-            <ArrowLeft className="h-5 w-5" />
+            <ArrowLeft className="h-4 w-4 md:h-5 md:w-5" />
           </Button>
-          <h1 className="text-3xl font-bold">Settings</h1>
+          <h1 className="text-2xl md:text-3xl font-bold">Settings</h1>
         </div>
 
-        <div className="space-y-6">
+        <div className="space-y-4 md:space-y-6">
           {/* Expiry Alert Threshold */}
           <Card>
             <CardHeader>

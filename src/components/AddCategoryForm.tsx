@@ -40,12 +40,12 @@ export const AddCategoryForm = ({ open, onOpenChange, onAdd }: AddCategoryFormPr
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
-      <SheetContent side="bottom" className="h-[90vh]">
+      <SheetContent side="bottom" className="h-[92vh] md:h-[90vh] overflow-y-auto p-4 md:p-6">
         <SheetHeader>
-          <SheetTitle className="text-3xl font-bold">Add New Category</SheetTitle>
+          <SheetTitle className="text-2xl md:text-3xl font-bold">Add New Category</SheetTitle>
         </SheetHeader>
         
-        <form onSubmit={handleSubmit} className="mt-6 space-y-6">
+        <form onSubmit={handleSubmit} className="mt-4 md:mt-6 space-y-4 md:space-y-6">
           <div className="space-y-2">
             <Label htmlFor="categoryName" className="text-xl">
               Category Name *

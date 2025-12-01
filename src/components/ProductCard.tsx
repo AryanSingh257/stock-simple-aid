@@ -78,7 +78,7 @@ export const ProductCard = ({
 
   return (
     <>
-      <Card className={`p-6 relative ${cardClass}`}>
+      <Card className={`p-4 md:p-6 relative ${cardClass}`}>
         <Button
           onClick={() => setShowEditForm(true)}
           variant="ghost"
@@ -88,28 +88,28 @@ export const ProductCard = ({
           <Settings2 className="h-4 w-4" />
         </Button>
 
-        <div className="space-y-4">
-          <div className="flex justify-between items-start gap-4">
-            <div className="flex-1 min-w-0 pr-8">
+        <div className="space-y-3 md:space-y-4">
+          <div className="flex flex-col sm:flex-row justify-between items-start gap-3 md:gap-4">
+            <div className="flex-1 min-w-0 pr-8 w-full">
               <div className="flex items-center gap-2 flex-wrap">
-                <h3 className={`text-2xl font-bold truncate ${textStyle}`}>{product.name}</h3>
+                <h3 className={`text-xl md:text-2xl font-bold break-words ${textStyle}`}>{product.name}</h3>
               {product.batches && product.batches.length > 0 && (
-                <span className="px-2 py-1 bg-primary/10 text-primary text-sm font-medium rounded">
+                <span className="px-2 py-1 bg-primary/10 text-primary text-xs md:text-sm font-medium rounded">
                   {product.batches.length} {product.batches.length === 1 ? 'batch' : 'batches'}
                 </span>
               )}
             </div>
             {!showBatches && product.batches && product.batches.length > 0 && nearestExpiryDays !== null && (
-              <div className="text-sm text-muted-foreground mt-1">
+              <div className="text-xs md:text-sm text-muted-foreground mt-1">
                 Next expiry: {nearestExpiryDays > 0 ? `${nearestExpiryDays} days` : 'Today'}
               </div>
             )}
           </div>
-          <div className="text-right">
-            <div className={`text-3xl font-bold ${textStyle}`}>{product.quantity}</div>
-            <div className="text-sm text-muted-foreground">in stock</div>
+          <div className="text-left sm:text-right">
+            <div className={`text-2xl md:text-3xl font-bold ${textStyle}`}>{product.quantity}</div>
+            <div className="text-xs md:text-sm text-muted-foreground">in stock</div>
             {isZeroQuantity && (
-              <div className="text-sm text-red-600 font-semibold mt-1">
+              <div className="text-xs md:text-sm text-red-600 font-semibold mt-1">
                 ⚠️ Needs Restock
               </div>
             )}
@@ -118,14 +118,14 @@ export const ProductCard = ({
 
 
         {product.expiryDate && (
-          <div className="text-base">
+          <div className="text-sm md:text-base">
             <span className="text-muted-foreground">Earliest Expiry: </span>
             <span className="font-medium">{formatDate(product.expiryDate)}</span>
           </div>
         )}
 
         {(product.costPrice || product.sellingPrice) && (
-          <div className="flex gap-6 text-base">
+          <div className="flex flex-col sm:flex-row gap-3 md:gap-6 text-sm md:text-base">
             {product.costPrice && (
               <div>
                 <span className="text-muted-foreground">Cost: </span>
