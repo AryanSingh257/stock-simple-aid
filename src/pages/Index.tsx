@@ -130,22 +130,22 @@ const Index = () => {
 
         <SearchBar value={searchQuery} onChange={setSearchQuery} />
 
-        <div className="space-y-2 md:space-y-4">
+        <div className="space-y-3 md:space-y-4">
           {filteredProducts.length === 0 ? (
-            <div className="text-center py-8 md:py-16">
-              <p className="text-base md:text-2xl text-muted-foreground px-3 md:px-4">
+            <div className="text-center py-12 md:py-16">
+              <p className="text-lg md:text-2xl text-muted-foreground px-4">
                 {searchQuery ? "No products found" : "No products yet. Click the + button to add your first product!"}
               </p>
             </div>
           ) : hasCategories && categoryKeys.length > 0 ? (
-            <Accordion type="single" collapsible className="space-y-2 md:space-y-4">
+            <Accordion type="single" collapsible className="space-y-3 md:space-y-4">
               {categoryKeys.map((categoryName) => (
-                <AccordionItem key={categoryName} value={categoryName} className="border rounded-lg">
-                  <AccordionTrigger className="px-3 md:px-6 py-2 md:py-4 text-base md:text-2xl font-bold hover:no-underline">
+                <AccordionItem key={categoryName} value={categoryName} className="border-2 rounded-lg">
+                  <AccordionTrigger className="px-4 md:px-6 py-3 md:py-4 text-xl md:text-2xl font-bold hover:no-underline">
                     {categoryName} ({groupedProducts[categoryName].length})
                   </AccordionTrigger>
-                  <AccordionContent className="px-2 md:px-4 pb-2 md:pb-4">
-                    <div className="space-y-2 md:space-y-4">
+                  <AccordionContent className="px-3 md:px-4 pb-3 md:pb-4">
+                    <div className="space-y-3 md:space-y-4">
                       {groupedProducts[categoryName].map((product) => (
                         <ProductCard
                           key={product.id}

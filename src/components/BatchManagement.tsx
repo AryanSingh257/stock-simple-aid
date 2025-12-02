@@ -137,13 +137,13 @@ export const BatchManagement = ({
   };
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-3 md:space-y-4">
       <div className="flex justify-between items-center">
-        <h3 className="text-xl font-bold">Batches</h3>
+        <h3 className="text-lg md:text-xl font-bold">Batches</h3>
         <Dialog open={open} onOpenChange={handleOpenChange}>
           <DialogTrigger asChild>
-            <Button size="sm" className="h-10">
-              <Plus className="h-4 w-4 mr-2" />
+            <Button size="sm" className="h-9 text-sm">
+              <Plus className="h-4 w-4 mr-1.5" />
               Add Batch
             </Button>
           </DialogTrigger>
@@ -156,9 +156,9 @@ export const BatchManagement = ({
                 Enter batch details below
               </DialogDescription>
             </DialogHeader>
-            <form onSubmit={handleSubmit} className="space-y-4 pt-4">
+            <form onSubmit={handleSubmit} className="space-y-4 pt-3">
               <div className="space-y-2">
-                <Label htmlFor="quantity" className="text-lg">Quantity *</Label>
+                <Label htmlFor="quantity" className="text-base">Quantity *</Label>
                 <Input
                   id="quantity"
                   type="number"
@@ -166,7 +166,7 @@ export const BatchManagement = ({
                   value={formData.quantity || ""}
                   onChange={(e) => setFormData({ quantity: parseInt(e.target.value) || 0 })}
                   placeholder="Enter quantity"
-                  className="h-12 text-lg"
+                  className="h-11 text-base"
                   required
                 />
               </div>
@@ -192,16 +192,16 @@ export const BatchManagement = ({
                 </div>
               )}
 
-              <div className="flex gap-3 pt-4">
+              <div className="flex gap-3 pt-3">
                 <Button
                   type="button"
                   variant="outline"
                   onClick={handleClose}
-                  className="flex-1 h-12 text-lg"
+                  className="flex-1 h-11 text-base"
                 >
                   Cancel
                 </Button>
-                <Button type="submit" className="flex-1 h-12 text-lg">
+                <Button type="submit" className="flex-1 h-11 text-base">
                   {editingBatch ? "Update Batch" : "Add Batch"}
                 </Button>
               </div>
@@ -211,13 +211,13 @@ export const BatchManagement = ({
       </div>
 
       {batches && batches.length > 0 ? (
-        <div className="space-y-3">
-          {batches.map((batch) => (
-            <BatchCard key={batch.id} batch={batch} onEdit={handleEdit} />
+        <div className="space-y-2 md:space-y-3">
+          {batches.map((batch, index) => (
+            <BatchCard key={batch.id} batch={batch} batchNumber={index + 1} onEdit={handleEdit} />
           ))}
         </div>
       ) : (
-        <p className="text-muted-foreground text-center py-4">No batches yet. Add your first batch above.</p>
+        <p className="text-muted-foreground text-center py-3 text-sm">No batches yet. Add your first batch above.</p>
       )}
     </div>
   );
