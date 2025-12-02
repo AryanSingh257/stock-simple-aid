@@ -5,10 +5,11 @@ import { Pencil } from "lucide-react";
 
 interface BatchCardProps {
   batch: Batch;
+  batchNumber: number;
   onEdit: (batch: Batch) => void;
 }
 
-export const BatchCard = ({ batch, onEdit }: BatchCardProps) => {
+export const BatchCard = ({ batch, batchNumber, onEdit }: BatchCardProps) => {
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);
     return date.toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' });
@@ -34,13 +35,16 @@ export const BatchCard = ({ batch, onEdit }: BatchCardProps) => {
   };
 
   return (
-    <Card className={`p-3 border-2 ${getStatusColor()}`}>
-      <div className="flex justify-between items-start gap-3">
+    <Card className={`p-3 border ${getStatusColor()}`}>
+      <div className="flex justify-between items-start gap-2">
         <div className="flex-1 min-w-0">
-          <div className="font-semibold text-sm mb-2">{getStatusText()}</div>
-          <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-xs">
+          <div className="flex items-center gap-2 mb-2">
+            <span className="font-semibold text-sm">Batch #{batchNumber}</span>
+            <span className="text-xs px-2 py-0.5 rounded-full border">{getStatusText()}</span>
+          </div>
+          <div className="grid grid-cols-2 gap-x-3 gap-y-1.5 text-xs">
             <div>
-              <span className="text-muted-foreground">Qty:</span> <span className="font-medium">{batch.quantity}</span>
+              <span className="text-muted-foreground">Qty:</span> <span className="font-semibold">{batch.quantity}</span>
             </div>
             <div>
               <span className="text-muted-foreground">Expires:</span> <span className="font-medium">{formatDate(batch.expiryDate)}</span>
@@ -53,7 +57,7 @@ export const BatchCard = ({ batch, onEdit }: BatchCardProps) => {
                 <span className="text-muted-foreground">Cost:</span> <span className="font-medium">₹{batch.costPrice.toFixed(2)}</span>
               </div>
             )}
-            <div className="col-span-2 text-muted-foreground/70 mt-1">
+            <div className="col-span-2 text-muted-foreground/60 text-[10px] mt-0.5">
               Added: {formatDate(batch.dateAdded)}
             </div>
           </div>

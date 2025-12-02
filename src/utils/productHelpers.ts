@@ -1,31 +1,51 @@
 import { Product } from "@/types/product";
 
-export const isLowStock = (quantity: number, threshold: number = 10): boolean => {
-  return quantity < threshold;
+// Check if total active batch quantity is low
+export const isLowStock = (product: Product, threshold: number = 10): boolean => {
+  if (!product.batches || product.batches.length === 0) {
+    return product.quantity < threshold;
+  }
+  
+  const totalActiveQty = product.batches
+    .filter(b => b.status !== "expired")
+    .reduce((sum, b) => sum + b.quantity, 0);
+  
+  return totalActiveQty < threshold;
 };
 
-export const isExpiringSoon = (expiryDate?: string, daysThreshold: number = 14): boolean => {
-  if (!expiryDate) return false;
+// Check if ANY batch is expiring soon based on batch expiry dates
+export const isExpiringSoon = (product: Product, daysThreshold: number = 14): boolean => {
+  if (!product.batches || product.batches.length === 0) {
+    if (!product.expiryDate) return false;
+    const today = new Date();
+    const expiry = new Date(product.expiryDate);
+    const diffTime = expiry.getTime() - today.getTime();
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+    return diffDays <= daysThreshold && diffDays >= 0;
+  }
   
   const today = new Date();
-  const expiry = new Date(expiryDate);
-  const diffTime = expiry.getTime() - today.getTime();
-  const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
   
-  return diffDays <= daysThreshold && diffDays >= 0;
+  return product.batches.some(batch => {
+    if (batch.status === "expired" || batch.quantity === 0) return false;
+    const expiry = new Date(batch.expiryDate);
+    const diffTime = expiry.getTime() - today.getTime();
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+    return diffDays <= daysThreshold && diffDays >= 0;
+  });
 };
 
 export const sortProducts = (products: Product[], lowStockThreshold: number = 10, expiryDays: number = 14): Product[] => {
   return [...products].sort((a, b) => {
     // Priority 1: Low stock items first
-    const aLowStock = isLowStock(a.quantity, lowStockThreshold);
-    const bLowStock = isLowStock(b.quantity, lowStockThreshold);
+    const aLowStock = isLowStock(a, lowStockThreshold);
+    const bLowStock = isLowStock(b, lowStockThreshold);
     if (aLowStock && !bLowStock) return -1;
     if (!aLowStock && bLowStock) return 1;
     
     // Priority 2: Expiring items next
-    const aExpiring = isExpiringSoon(a.expiryDate, expiryDays);
-    const bExpiring = isExpiringSoon(b.expiryDate, expiryDays);
+    const aExpiring = isExpiringSoon(a, expiryDays);
+    const bExpiring = isExpiringSoon(b, expiryDays);
     if (aExpiring && !bExpiring) return -1;
     if (!aExpiring && bExpiring) return 1;
     
