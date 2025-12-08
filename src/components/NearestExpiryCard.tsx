@@ -1,85 +1,135 @@
+import { useState } from "react";
 import { Product } from "@/types/product";
 import { Batch } from "@/types/batch";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { AlertCircle } from "lucide-react";
-import { useNavigate } from "react-router-dom";
 import { useSettings } from "@/hooks/useSettings";
+import { ExpiringProductsDialog } from "./ExpiringProductsDialog";
 
 interface NearestExpiryCardProps {
   products: Product[];
 }
 
 export const NearestExpiryCard = ({ products }: NearestExpiryCardProps) => {
-  const navigate = useNavigate();
   const { settings } = useSettings();
+  const [showExpiringDialog, setShowExpiringDialog] = useState(false);
 
   // Find the nearest expiring batch across all products
-  const findNearestExpiryBatch = (): { product: Product; batch: Batch } | null => {
-    let nearestExpiry: { product: Product; batch: Batch; expiryDate: Date } | null = null;
+  const findNearestExpiryBatch = (): { product: Product; batch: Batch; daysLeft: number } | null => {
+    let nearestExpiry: { product: Product; batch: Batch; expiryDate: Date; daysLeft: number } | null = null;
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
 
     products.forEach((product) => {
       if (!product.batches || product.batches.length === 0) return;
 
       product.batches.forEach((batch) => {
-        if (batch.status === "expired" || batch.quantity === 0) return;
+        // Include batches with quantity > 0 (even expired ones for visibility)
+        if (batch.quantity === 0) return;
 
         const expiryDate = new Date(batch.expiryDate);
+        expiryDate.setHours(0, 0, 0, 0);
+        const daysLeft = Math.ceil((expiryDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
+
         if (!nearestExpiry || expiryDate < nearestExpiry.expiryDate) {
-          nearestExpiry = { product, batch, expiryDate };
+          nearestExpiry = { product, batch, expiryDate, daysLeft };
         }
       });
     });
 
-    return nearestExpiry ? { product: nearestExpiry.product, batch: nearestExpiry.batch } : null;
+    return nearestExpiry ? { product: nearestExpiry.product, batch: nearestExpiry.batch, daysLeft: nearestExpiry.daysLeft } : null;
+  };
+
+  // Count total expiring batches
+  const countExpiringBatches = (): number => {
+    let count = 0;
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    products.forEach((product) => {
+      if (!product.batches || product.batches.length === 0) return;
+
+      product.batches.forEach((batch) => {
+        if (batch.quantity === 0) return;
+
+        const expiryDate = new Date(batch.expiryDate);
+        expiryDate.setHours(0, 0, 0, 0);
+        const daysLeft = Math.ceil((expiryDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
+
+        if (daysLeft <= settings.expiryAlertDays) {
+          count++;
+        }
+      });
+    });
+
+    return count;
   };
 
   const nearestExpiry = findNearestExpiryBatch();
+  const expiringCount = countExpiringBatches();
 
-  if (!nearestExpiry) {
+  // Don't show card if no batches exist or nearest is not within alert threshold
+  if (!nearestExpiry || nearestExpiry.daysLeft > settings.expiryAlertDays) {
     return null;
   }
 
-  const { product, batch } = nearestExpiry;
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
-  const expiry = new Date(batch.expiryDate);
-  expiry.setHours(0, 0, 0, 0);
-  const daysLeft = Math.ceil((expiry.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
+  const { product, batch, daysLeft } = nearestExpiry;
 
   const getAlertColor = () => {
-    if (daysLeft <= 7) return "bg-destructive/10 border-destructive";
-    if (daysLeft <= settings.expiryAlertDays) return "bg-warning/10 border-warning";
-    return "bg-card border-border";
+    if (daysLeft < 0) return "bg-destructive/10 border-destructive";
+    if (daysLeft <= 3) return "bg-red-100 border-red-400";
+    if (daysLeft <= 7) return "bg-orange-100 border-orange-400";
+    return "bg-yellow-100 border-yellow-400";
+  };
+
+  const getDaysText = () => {
+    if (daysLeft < 0) return <span className="text-destructive">Expired {Math.abs(daysLeft)} days ago</span>;
+    if (daysLeft === 0) return <span className="text-destructive">Expires today!</span>;
+    if (daysLeft === 1) return "Expires tomorrow";
+    return `${daysLeft} days left`;
   };
 
   return (
-    <Card className={`p-4 md:p-6 border-2 ${getAlertColor()} mb-4 md:mb-6`}>
-      <div className="flex flex-col sm:flex-row items-start gap-3 md:gap-4">
-        <AlertCircle className="h-5 w-5 md:h-6 md:w-6 text-destructive flex-shrink-0 mt-1" />
-        <div className="flex-1 w-full">
-          <h3 className="text-lg md:text-xl font-bold mb-2 md:mb-3">Nearest Expiry Batch</h3>
-          <div className="space-y-1 md:space-y-2">
-            <p className="text-base md:text-lg break-words">
-              <span className="font-semibold">Product:</span> {product.name}
-            </p>
-            <p className="text-base md:text-lg">
-              <span className="font-semibold">Days Left:</span> {daysLeft} {daysLeft === 1 ? "day" : "days"}
-            </p>
-            <p className="text-base md:text-lg">
-              <span className="font-semibold">Quantity:</span> {batch.quantity}
-            </p>
+    <>
+      <Card className={`p-3 sm:p-4 border-2 ${getAlertColor()} mb-3 sm:mb-4`}>
+        <div className="flex items-start gap-3">
+          <AlertCircle className="h-5 w-5 text-destructive flex-shrink-0 mt-0.5" />
+          <div className="flex-1 min-w-0">
+            <h3 className="text-base sm:text-lg font-bold mb-1.5">Nearest Expiry</h3>
+            <div className="space-y-1 text-sm">
+              <p className="break-words">
+                <span className="text-muted-foreground">Product:</span>{" "}
+                <span className="font-semibold">{product.name}</span>
+              </p>
+              <p>
+                <span className="text-muted-foreground">Status:</span>{" "}
+                <span className="font-semibold">{getDaysText()}</span>
+              </p>
+              <p>
+                <span className="text-muted-foreground">Qty:</span>{" "}
+                <span className="font-semibold">{batch.quantity}</span>
+              </p>
+            </div>
+            {expiringCount > 0 && (
+              <Button
+                onClick={() => setShowExpiringDialog(true)}
+                variant="outline"
+                size="sm"
+                className="mt-3 h-9 text-sm w-full sm:w-auto"
+              >
+                View All Expiring ({expiringCount})
+              </Button>
+            )}
           </div>
-          <Button
-            onClick={() => navigate("/")}
-            variant="outline"
-            size="lg"
-            className="mt-3 md:mt-4 h-10 md:h-12 text-base md:text-lg w-full sm:w-auto"
-          >
-            View Product
-          </Button>
         </div>
-      </div>
-    </Card>
+      </Card>
+
+      <ExpiringProductsDialog
+        open={showExpiringDialog}
+        onOpenChange={setShowExpiringDialog}
+        products={products}
+      />
+    </>
   );
 };

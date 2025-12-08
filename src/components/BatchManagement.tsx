@@ -5,13 +5,6 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import {
   Dialog,
   DialogContent,
   DialogDescription,
@@ -47,6 +40,7 @@ export const BatchManagement = ({
 
   const calculateExpiryDate = (duration: number, unit: "days" | "weeks" | "months"): string => {
     const date = new Date();
+    date.setHours(0, 0, 0, 0);
     if (unit === "days") {
       date.setDate(date.getDate() + duration);
     } else if (unit === "weeks") {
@@ -61,7 +55,9 @@ export const BatchManagement = ({
     if (quantity === 0) return "out_of_stock";
     
     const today = new Date();
+    today.setHours(0, 0, 0, 0);
     const expiry = new Date(expiryDate);
+    expiry.setHours(0, 0, 0, 0);
     
     if (expiry < today) return "expired";
     
@@ -77,7 +73,7 @@ export const BatchManagement = ({
     }
 
     if (!productDuration || productDuration <= 0) {
-      toast.error("Product shelf life not set. Please edit product details first.");
+      toast.error("Product shelf life not set. Edit product first.");
       return;
     }
 
@@ -94,7 +90,7 @@ export const BatchManagement = ({
         status: calculateStatus(formData.quantity, expiryDate),
       };
       onUpdateBatch(updatedBatch);
-      toast.success("Batch updated successfully");
+      toast.success("Batch updated");
     } else {
       const newBatch: Batch = {
         id: crypto.randomUUID(),
@@ -107,7 +103,7 @@ export const BatchManagement = ({
         dateAdded: new Date().toISOString(),
       };
       onAddBatch(newBatch);
-      toast.success("Batch added successfully");
+      toast.success("Batch added");
     }
 
     setFormData({ quantity: 0 });
@@ -137,28 +133,28 @@ export const BatchManagement = ({
   };
 
   return (
-    <div className="space-y-3 md:space-y-4">
+    <div className="space-y-2.5">
       <div className="flex justify-between items-center">
-        <h3 className="text-lg md:text-xl font-bold">Batches</h3>
+        <h3 className="text-sm sm:text-base font-bold">Batches</h3>
         <Dialog open={open} onOpenChange={handleOpenChange}>
           <DialogTrigger asChild>
-            <Button size="sm" className="h-9 text-sm">
-              <Plus className="h-4 w-4 mr-1.5" />
-              Add Batch
+            <Button size="sm" className="h-8 text-xs sm:text-sm px-2.5">
+              <Plus className="h-3.5 w-3.5 mr-1" />
+              Add
             </Button>
           </DialogTrigger>
-          <DialogContent className="max-w-2xl w-[95vw] max-h-[90vh] overflow-y-auto">
+          <DialogContent className="w-[95vw] max-w-md max-h-[85vh] overflow-y-auto">
             <DialogHeader>
-              <DialogTitle className="text-xl md:text-2xl">
+              <DialogTitle className="text-lg sm:text-xl">
                 {editingBatch ? "Edit Batch" : "Add New Batch"}
               </DialogTitle>
-              <DialogDescription className="text-sm md:text-base">
+              <DialogDescription className="text-xs sm:text-sm">
                 Enter batch details below
               </DialogDescription>
             </DialogHeader>
-            <form onSubmit={handleSubmit} className="space-y-4 pt-3">
-              <div className="space-y-2">
-                <Label htmlFor="quantity" className="text-base">Quantity *</Label>
+            <form onSubmit={handleSubmit} className="space-y-4 pt-2">
+              <div className="space-y-1.5">
+                <Label htmlFor="quantity" className="text-sm sm:text-base">Quantity *</Label>
                 <Input
                   id="quantity"
                   type="number"
@@ -166,43 +162,43 @@ export const BatchManagement = ({
                   value={formData.quantity || ""}
                   onChange={(e) => setFormData({ quantity: parseInt(e.target.value) || 0 })}
                   placeholder="Enter quantity"
-                  className="h-11 text-base"
+                  className="h-10 sm:h-11 text-base"
                   required
                 />
               </div>
 
               {productDuration && productDuration > 0 && (
-                <div className="bg-muted p-3 rounded-lg">
-                  <p className="text-sm text-muted-foreground">
-                    Shelf life: <span className="font-semibold">{productDuration} {productDurationUnit}</span>
+                <div className="bg-muted p-2.5 rounded-lg text-sm">
+                  <p className="text-muted-foreground">
+                    Shelf life: <span className="font-semibold text-foreground">{productDuration} {productDurationUnit}</span>
                   </p>
                   {productCostPrice && (
-                    <p className="text-sm text-muted-foreground">
-                      Cost price: <span className="font-semibold">₹{productCostPrice.toFixed(2)}</span>
+                    <p className="text-muted-foreground">
+                      Cost: <span className="font-semibold text-foreground">₹{productCostPrice}</span>
                     </p>
                   )}
                 </div>
               )}
 
               {(!productDuration || productDuration <= 0) && (
-                <div className="bg-destructive/10 border border-destructive p-3 rounded-lg">
-                  <p className="text-sm text-destructive">
-                    Product shelf life not set. Please edit product details to add shelf life before creating batches.
+                <div className="bg-destructive/10 border border-destructive p-2.5 rounded-lg">
+                  <p className="text-xs sm:text-sm text-destructive">
+                    Product shelf life not set. Edit product details first.
                   </p>
                 </div>
               )}
 
-              <div className="flex gap-3 pt-3">
+              <div className="flex gap-3 pt-2">
                 <Button
                   type="button"
                   variant="outline"
                   onClick={handleClose}
-                  className="flex-1 h-11 text-base"
+                  className="flex-1 h-10 sm:h-11 text-sm sm:text-base"
                 >
                   Cancel
                 </Button>
-                <Button type="submit" className="flex-1 h-11 text-base">
-                  {editingBatch ? "Update Batch" : "Add Batch"}
+                <Button type="submit" className="flex-1 h-10 sm:h-11 text-sm sm:text-base">
+                  {editingBatch ? "Update" : "Add"}
                 </Button>
               </div>
             </form>
@@ -211,13 +207,13 @@ export const BatchManagement = ({
       </div>
 
       {batches && batches.length > 0 ? (
-        <div className="space-y-2 md:space-y-3">
+        <div className="space-y-2">
           {batches.map((batch, index) => (
             <BatchCard key={batch.id} batch={batch} batchNumber={index + 1} onEdit={handleEdit} />
           ))}
         </div>
       ) : (
-        <p className="text-muted-foreground text-center py-3 text-sm">No batches yet. Add your first batch above.</p>
+        <p className="text-muted-foreground text-center py-2 text-xs sm:text-sm">No batches yet</p>
       )}
     </div>
   );

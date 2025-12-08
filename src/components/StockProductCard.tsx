@@ -11,12 +11,18 @@ import { BatchManagement } from "./BatchManagement";
 import { EditProductForm } from "./EditProductForm";
 import { StockAdjustmentDialog } from "./StockAdjustmentDialog";
 import { syncProductWithBatches } from "@/utils/batchHelpers";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
 interface StockProductCardProps {
   product: Product;
   onDelete: (id: string) => void;
   onUpdateProduct: (product: Product) => void;
-  onStockAdjust: (productId: string, newQuantity: number, reason: string) => void;
+  onStockAdjust: (productId: string, newQuantity: number, reason: string, newBatchData?: { duration: number; durationUnit: "days" | "weeks" | "months" }) => void;
   categories?: Category[];
 }
 
@@ -78,62 +84,84 @@ export const StockProductCard = ({
     return diffDays;
   };
 
-  const nearestExpiryDays = product.expiryDate ? getDaysUntilExpiry(product.expiryDate) : null;
+  // Only show nearest expiry if there are active batches with quantity
+  const activeBatches = product.batches?.filter(b => b.quantity > 0 && b.status !== "expired") || [];
+  const hasActiveBatches = activeBatches.length > 0;
+  const nearestExpiryDays = hasActiveBatches && product.expiryDate ? getDaysUntilExpiry(product.expiryDate) : null;
 
-  const handleAdjust = (newQuantity: number, reason: string) => {
-    onStockAdjust(product.id, newQuantity, reason);
+  const handleAdjust = (newQuantity: number, reason: string, newBatchData?: { duration: number; durationUnit: "days" | "weeks" | "months" }) => {
+    onStockAdjust(product.id, newQuantity, reason, newBatchData);
   };
 
   return (
     <>
-      <Card className={`p-3 sm:p-4 md:p-6 relative ${cardClass}`}>
-        <Button
-          onClick={() => setShowEditForm(true)}
-          variant="ghost"
-          size="sm"
-          className="absolute top-2 right-2 h-8 w-8 p-0"
-        >
-          <Settings2 className="h-4 w-4" />
-        </Button>
+      <Card className={`p-3 sm:p-4 relative ${cardClass}`}>
+        {/* Settings menu - moved Adjust Stock here */}
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button
+              variant="ghost"
+              size="sm"
+              className="absolute top-2 right-2 h-8 w-8 p-0"
+            >
+              <Settings2 className="h-4 w-4" />
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end" className="bg-background border z-50">
+            <DropdownMenuItem onClick={() => setShowAdjustDialog(true)} className="cursor-pointer">
+              <Wrench className="h-4 w-4 mr-2" />
+              Adjust Stock
+            </DropdownMenuItem>
+            <DropdownMenuItem onClick={() => setShowEditForm(true)} className="cursor-pointer">
+              <Settings2 className="h-4 w-4 mr-2" />
+              Edit Product
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
 
-        <div className="space-y-3">
+        <div className="space-y-2.5">
+          {/* Product name and batch count */}
           <div className="pr-10">
-            <div className="flex items-start gap-2 flex-wrap mb-2">
-              <h3 className={`text-lg sm:text-xl md:text-2xl font-bold break-words ${textStyle}`}>{product.name}</h3>
+            <div className="flex items-start gap-2 flex-wrap mb-1">
+              <h3 className={`text-base sm:text-lg md:text-xl font-bold break-words leading-tight ${textStyle}`}>{product.name}</h3>
               {product.batches && product.batches.length > 0 && (
-                <span className="px-2 py-0.5 bg-primary/10 text-primary text-xs font-medium rounded whitespace-nowrap">
+                <span className="px-1.5 py-0.5 bg-primary/10 text-primary text-xs font-medium rounded whitespace-nowrap">
                   {product.batches.length} {product.batches.length === 1 ? 'batch' : 'batches'}
                 </span>
               )}
             </div>
-            {!showBatches && product.batches && product.batches.length > 0 && nearestExpiryDays !== null && (
-              <div className="text-sm text-muted-foreground">
-                Next expiry: {nearestExpiryDays > 0 ? `${nearestExpiryDays} days` : nearestExpiryDays === 0 ? 'Today' : 'Expired'}
+            {/* Nearest expiry - only show if has active batches */}
+            {hasActiveBatches && nearestExpiryDays !== null && (
+              <div className="text-xs sm:text-sm text-muted-foreground">
+                Next expiry: {nearestExpiryDays > 0 ? `${nearestExpiryDays} days` : nearestExpiryDays === 0 ? 'Today' : <span className="text-destructive font-medium">Expired</span>}
               </div>
             )}
           </div>
           
-          <div className="flex items-center justify-between gap-3">
+          {/* Stock quantity */}
+          <div className="flex items-center justify-between gap-2">
             <div>
-              <div className={`text-xl sm:text-2xl md:text-3xl font-bold ${textStyle}`}>{product.quantity}</div>
-              <div className="text-xs sm:text-sm text-muted-foreground">in stock</div>
+              <div className={`text-xl sm:text-2xl font-bold ${textStyle}`}>{product.quantity}</div>
+              <div className="text-xs text-muted-foreground">in stock</div>
             </div>
             {isZeroQuantity && (
-              <div className="text-xs sm:text-sm text-red-600 font-semibold">
-                ⚠️ Needs Restock
+              <div className="text-xs text-red-600 font-semibold">
+                ⚠️ Restock
               </div>
             )}
           </div>
 
-          {product.expiryDate && (
-            <div className="text-xs sm:text-sm md:text-base">
+          {/* Earliest expiry date */}
+          {hasActiveBatches && product.expiryDate && (
+            <div className="text-xs sm:text-sm">
               <span className="text-muted-foreground">Earliest Expiry: </span>
               <span className="font-medium">{formatDate(product.expiryDate)}</span>
             </div>
           )}
 
+          {/* Prices */}
           {(product.costPrice || product.sellingPrice) && (
-            <div className="flex flex-wrap gap-3 sm:gap-4 text-xs sm:text-sm md:text-base">
+            <div className="flex flex-wrap gap-3 text-xs sm:text-sm">
               {product.costPrice && (
                 <div>
                   <span className="text-muted-foreground">Cost: </span>
@@ -149,49 +177,41 @@ export const StockProductCard = ({
             </div>
           )}
 
+          {/* Alerts */}
           {lowStock && (
-            <div className="text-low-stock-foreground font-semibold text-sm sm:text-base">
-              ⚠️ Low Stock - Please restock soon
+            <div className="text-low-stock-foreground font-semibold text-xs sm:text-sm">
+              ⚠️ Low Stock - Restock soon
             </div>
           )}
 
           {expiring && (
-            <div className="text-expiring-foreground font-semibold text-sm sm:text-base">
+            <div className="text-expiring-foreground font-semibold text-xs sm:text-sm">
               ⏰ Expiring Soon
             </div>
           )}
 
-          <div className="flex gap-2 pt-2">
+          {/* Batch toggle button */}
+          {product.batches && product.batches.length > 0 && (
             <Button
-              onClick={() => setShowAdjustDialog(true)}
+              onClick={() => setShowBatches(!showBatches)}
               variant="outline"
-              className="flex-1 h-10 sm:h-11 text-sm sm:text-base"
+              className="w-full h-9 sm:h-10 text-xs sm:text-sm mt-1"
             >
-              <Wrench className="h-4 w-4 mr-2" />
-              Adjust Stock
+              {showBatches ? (
+                <>
+                  <ChevronUp className="h-4 w-4 mr-1.5" />
+                  Hide Batches
+                </>
+              ) : (
+                <>
+                  <ChevronDown className="h-4 w-4 mr-1.5" />
+                  Show Batches ({product.batches.length})
+                </>
+              )}
             </Button>
-            
-            {product.batches && product.batches.length > 0 && (
-              <Button
-                onClick={() => setShowBatches(!showBatches)}
-                variant="outline"
-                className="flex-1 h-10 sm:h-11 text-sm sm:text-base"
-              >
-                {showBatches ? (
-                  <>
-                    <ChevronUp className="h-4 w-4 mr-1 sm:mr-2" />
-                    <span className="hidden xs:inline">Hide</span> Batches
-                  </>
-                ) : (
-                  <>
-                    <ChevronDown className="h-4 w-4 mr-1 sm:mr-2" />
-                    <span className="hidden xs:inline">Show</span> Batches ({product.batches.length})
-                  </>
-                )}
-              </Button>
-            )}
-          </div>
+          )}
 
+          {/* Batch management section */}
           {product.batches && product.batches.length > 0 && showBatches && (
             <div className="pt-2 border-t">
               <BatchManagement
@@ -205,6 +225,7 @@ export const StockProductCard = ({
             </div>
           )}
 
+          {/* No batches - show add batch option */}
           {(!product.batches || product.batches.length === 0) && (
             <div className="pt-2">
               <BatchManagement

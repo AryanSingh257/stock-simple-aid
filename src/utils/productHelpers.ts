@@ -6,14 +6,15 @@ export const isLowStock = (product: Product, threshold: number = 10): boolean =>
     return product.quantity < threshold;
   }
   
+  // Sum only non-expired batches
   const totalActiveQty = product.batches
     .filter(b => b.status !== "expired")
     .reduce((sum, b) => sum + b.quantity, 0);
   
-  return totalActiveQty < threshold;
+  return totalActiveQty > 0 && totalActiveQty < threshold;
 };
 
-// Check if ANY batch is expiring soon based on batch expiry dates
+// Check if ANY active batch is expiring soon based on batch expiry dates
 export const isExpiringSoon = (product: Product, daysThreshold: number = 14): boolean => {
   if (!product.batches || product.batches.length === 0) {
     if (!product.expiryDate) return false;
@@ -29,12 +30,14 @@ export const isExpiringSoon = (product: Product, daysThreshold: number = 14): bo
   const today = new Date();
   today.setHours(0, 0, 0, 0);
   
+  // Check only active batches with quantity > 0
   return product.batches.some(batch => {
     if (batch.status === "expired" || batch.quantity === 0) return false;
     const expiry = new Date(batch.expiryDate);
     expiry.setHours(0, 0, 0, 0);
     const diffTime = expiry.getTime() - today.getTime();
     const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+    // Trigger alert ONLY if days_left <= threshold (not > threshold)
     return diffDays <= daysThreshold && diffDays >= 0;
   });
 };
