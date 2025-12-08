@@ -55,7 +55,7 @@ const Billing = () => {
       groups[categoryName].push(product);
     });
 
-    // Sort each category by purchase count (descending), then by creation date
+    // Sort each category by purchase count (descending)
     Object.keys(groups).forEach((categoryName) => {
       groups[categoryName].sort((a, b) => {
         const countA = a.purchaseCount || 0;
@@ -81,7 +81,7 @@ const Billing = () => {
     
     if (existingItem) {
       if (existingItem.quantity >= product.quantity) {
-        toast.error("Not enough stock available");
+        toast.error("Not enough stock");
         return;
       }
       setBillItems(
@@ -148,15 +148,17 @@ const Billing = () => {
         
         // Show alerts
         if (updatedProduct.quantity < settings.lowStockThreshold && updatedProduct.quantity >= 0) {
-          toast.warning(`Low stock alert: ${product.name} (${updatedProduct.quantity} left)`);
+          toast.warning(`Low stock: ${product.name} (${updatedProduct.quantity} left)`);
         }
         
         if (updatedProduct.expiryDate) {
           const today = new Date();
+          today.setHours(0, 0, 0, 0);
           const expiry = new Date(updatedProduct.expiryDate);
+          expiry.setHours(0, 0, 0, 0);
           const diffDays = Math.ceil((expiry.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
           if (diffDays <= settings.expiryAlertDays && diffDays >= 0) {
-            toast.warning(`Near expiry: ${product.name} (${diffDays} days)`);
+            toast.warning(`Expiring soon: ${product.name} (${diffDays}d)`);
           }
         }
         
@@ -180,7 +182,7 @@ const Billing = () => {
 
     setBillItems([]);
     setIsSheetOpen(false);
-    toast.success("Sale completed successfully");
+    toast.success("Sale completed");
   };
 
   const handleClearBill = () => {
@@ -197,80 +199,78 @@ const Billing = () => {
   const categoryKeys = Object.keys(groupedProducts);
 
   return (
-    <div className="min-h-screen bg-background p-3 sm:p-4 md:p-8">
+    <div className="min-h-screen bg-background p-2 sm:p-4 md:p-8 pb-24">
       <div className="max-w-4xl mx-auto">
-        <div className="mb-6 md:mb-8">
-          <h1 className="text-3xl md:text-4xl font-bold mb-2">Billing</h1>
-          <p className="text-lg md:text-xl text-muted-foreground">Select products and create bills</p>
+        <div className="mb-3 sm:mb-4 md:mb-6">
+          <h1 className="text-xl sm:text-2xl md:text-4xl font-bold mb-0.5 md:mb-1">Billing</h1>
+          <p className="text-xs sm:text-sm md:text-lg text-muted-foreground">Select products and create bills</p>
         </div>
 
         <Navigation />
         
-        <SearchBar value={searchQuery} onChange={setSearchQuery} />
+        <SearchBar value={searchQuery} onChange={setSearchQuery} placeholder="Search products..." />
 
-        <div className="space-y-3 md:space-y-4 mb-20 md:mb-24">
+        <div className="space-y-2.5 mb-20">
           {categoryKeys.length === 0 ? (
-            <div className="text-center py-12 md:py-16">
-              <p className="text-xl md:text-2xl text-muted-foreground">
+            <div className="text-center py-10 md:py-16">
+              <p className="text-sm sm:text-base md:text-xl text-muted-foreground">
                 {searchQuery ? "No products found" : "No products available for billing"}
               </p>
             </div>
           ) : (
-            <Accordion type="single" collapsible className="space-y-3 md:space-y-4">
+            <Accordion type="single" collapsible className="space-y-2.5">
               {categoryKeys.map((categoryName) => (
-                <AccordionItem key={categoryName} value={categoryName} className="border-2 rounded-lg">
-                  <AccordionTrigger className="px-4 md:px-6 py-3 md:py-4 text-xl md:text-2xl font-bold hover:no-underline">
+                <AccordionItem key={categoryName} value={categoryName} className="border-2 rounded-lg overflow-hidden">
+                  <AccordionTrigger className="px-3 sm:px-4 py-2.5 sm:py-3 text-base sm:text-lg md:text-xl font-bold hover:no-underline">
                     {categoryName} ({groupedProducts[categoryName].length})
                   </AccordionTrigger>
-                  <AccordionContent className="px-3 md:px-4 pb-3 md:pb-4">
-                    <div className="space-y-3 md:space-y-4">
+                  <AccordionContent className="px-2 sm:px-3 pb-2.5">
+                    <div className="space-y-2.5">
                       {groupedProducts[categoryName].map((product) => {
                         const qtyInBill = getItemQuantity(product.id);
                         const isPurchased = (product.purchaseCount || 0) > 0;
                         return (
                           <div
                             key={product.id}
-                            className={`bg-card border-2 border-border rounded-lg p-4 md:p-6 ${isPurchased ? 'border-primary/30' : ''}`}
+                            className={`bg-card border-2 border-border rounded-lg p-3 sm:p-4 ${isPurchased ? 'border-primary/30' : ''}`}
                           >
-                            <div className="flex flex-col sm:flex-row justify-between items-start mb-4 gap-3">
-                              <div className="flex-1 w-full">
-                                <h3 className="text-xl md:text-2xl font-semibold mb-2 break-words">
-                                  {product.name}
-                                  {isPurchased && (
-                                    <span className="ml-2 md:ml-3 text-sm font-normal text-muted-foreground block sm:inline mt-1 sm:mt-0">
-                                      ({product.purchaseCount} sold)
-                                    </span>
-                                  )}
-                                </h3>
-                                <div className="space-y-1">
-                                  <p className="text-base md:text-lg">
-                                    Price: <span className="font-semibold">₹{(product.sellingPrice || 0).toFixed(2)}</span>
-                                  </p>
-                                  <p className="text-base md:text-lg">
-                                    Stock: <span className="font-semibold">{product.quantity}</span>
-                                  </p>
-                                </div>
+                            <div className="mb-3">
+                              <h3 className="text-base sm:text-lg font-semibold mb-1 break-words leading-tight">
+                                {product.name}
+                                {isPurchased && (
+                                  <span className="ml-2 text-xs font-normal text-muted-foreground">
+                                    ({product.purchaseCount} sold)
+                                  </span>
+                                )}
+                              </h3>
+                              <div className="flex gap-4 text-xs sm:text-sm">
+                                <p>
+                                  Price: <span className="font-semibold">₹{(product.sellingPrice || 0).toFixed(0)}</span>
+                                </p>
+                                <p>
+                                  Stock: <span className="font-semibold">{product.quantity}</span>
+                                </p>
                               </div>
                             </div>
-                            <div className="flex items-center gap-3 md:gap-4">
+                            <div className="flex items-center gap-2 sm:gap-3">
                               <Button
                                 onClick={() => handleDecrease(product.id)}
                                 size="lg"
                                 variant="destructive"
-                                className="h-12 w-12 md:h-14 md:w-14 text-xl md:text-2xl flex-shrink-0"
+                                className="h-10 w-10 sm:h-12 sm:w-12 text-lg flex-shrink-0 p-0"
                                 disabled={qtyInBill === 0}
                               >
-                                <Minus className="h-5 w-5 md:h-6 md:w-6" />
+                                <Minus className="h-4 w-4 sm:h-5 sm:w-5" />
                               </Button>
                               <div className="flex-1 text-center">
-                                <p className="text-lg md:text-xl font-semibold">Qty: {qtyInBill}</p>
+                                <p className="text-base sm:text-lg font-semibold">Qty: {qtyInBill}</p>
                               </div>
                               <Button
                                 onClick={() => handleIncrease(product.id)}
                                 size="lg"
-                                className="h-12 w-12 md:h-14 md:w-14 text-xl md:text-2xl flex-shrink-0"
+                                className="h-10 w-10 sm:h-12 sm:w-12 text-lg flex-shrink-0 p-0"
                               >
-                                <Plus className="h-5 w-5 md:h-6 md:w-6" />
+                                <Plus className="h-4 w-4 sm:h-5 sm:w-5" />
                               </Button>
                             </div>
                           </div>
@@ -284,63 +284,68 @@ const Billing = () => {
           )}
         </div>
 
+        {/* Floating total bar for mobile */}
         {billItems.length > 0 && (
-          <Sheet open={isSheetOpen} onOpenChange={setIsSheetOpen}>
-            <SheetTrigger asChild>
-              <Button
-                size="lg"
-                className="fixed bottom-6 right-4 md:bottom-8 md:right-8 h-14 w-14 md:h-16 md:w-16 rounded-full shadow-lg z-50"
-              >
-                <Receipt className="h-6 w-6 md:h-8 md:w-8" />
-              </Button>
-            </SheetTrigger>
-            <SheetContent side="bottom" className="h-[85vh] md:h-[80vh] p-4 md:p-6">
-              <SheetHeader>
-                <SheetTitle className="text-2xl md:text-3xl font-bold">Bill Summary</SheetTitle>
-              </SheetHeader>
-              
-              <div className="mt-4 md:mt-6 space-y-2 md:space-y-3 mb-4 md:mb-6 max-h-[45vh] md:max-h-[40vh] overflow-y-auto">
-                {billItems.map((item) => (
-                  <div key={item.productId} className="flex flex-col sm:flex-row sm:justify-between sm:items-center border-b pb-2 md:pb-3 gap-1">
-                    <p className="text-base md:text-lg break-words">
-                      <span className="font-medium">{item.name}</span>
-                      <span className="text-muted-foreground"> — Qty: {item.quantity}</span>
-                    </p>
-                    <p className="text-base md:text-lg font-semibold">₹{item.subtotal.toFixed(2)}</p>
+          <div className="fixed bottom-0 left-0 right-0 bg-background border-t-2 p-3 sm:p-4 z-40 flex items-center justify-between gap-3">
+            <div className="flex-1">
+              <p className="text-xs sm:text-sm text-muted-foreground">{itemCount} items</p>
+              <p className="text-lg sm:text-xl font-bold">₹{totalAmount.toFixed(0)}</p>
+            </div>
+            <Sheet open={isSheetOpen} onOpenChange={setIsSheetOpen}>
+              <SheetTrigger asChild>
+                <Button size="lg" className="h-11 sm:h-12 px-6 text-sm sm:text-base">
+                  <Receipt className="h-4 w-4 sm:h-5 sm:w-5 mr-2" />
+                  View Bill
+                </Button>
+              </SheetTrigger>
+              <SheetContent side="bottom" className="h-[80vh] p-3 sm:p-4 md:p-6">
+                <SheetHeader>
+                  <SheetTitle className="text-xl sm:text-2xl font-bold">Bill Summary</SheetTitle>
+                </SheetHeader>
+                
+                <div className="mt-3 sm:mt-4 space-y-2 mb-3 max-h-[40vh] overflow-y-auto">
+                  {billItems.map((item) => (
+                    <div key={item.productId} className="flex justify-between items-center border-b pb-2 gap-2">
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm sm:text-base font-medium truncate">{item.name}</p>
+                        <p className="text-xs sm:text-sm text-muted-foreground">Qty: {item.quantity} × ₹{item.price}</p>
+                      </div>
+                      <p className="text-sm sm:text-base font-semibold whitespace-nowrap">₹{item.subtotal.toFixed(0)}</p>
+                    </div>
+                  ))}
+                </div>
+
+                <div className="mb-4 pt-3 border-t-2">
+                  <div className="flex justify-between items-center mb-1">
+                    <span className="text-base sm:text-lg">Items:</span>
+                    <span className="text-base sm:text-lg font-bold">{itemCount}</span>
                   </div>
-                ))}
-              </div>
-
-              <div className="mb-4 md:mb-6 pt-3 md:pt-4 border-t-2">
-                <div className="flex justify-between items-center mb-2">
-                  <span className="text-xl md:text-2xl">Items:</span>
-                  <span className="text-xl md:text-2xl font-bold">{itemCount}</span>
+                  <div className="flex justify-between items-center">
+                    <span className="text-xl sm:text-2xl font-bold">Total:</span>
+                    <span className="text-xl sm:text-2xl font-bold">₹{totalAmount.toFixed(0)}</span>
+                  </div>
                 </div>
-                <div className="flex justify-between items-center">
-                  <span className="text-2xl md:text-3xl font-bold">Total:</span>
-                  <span className="text-2xl md:text-3xl font-bold">₹{totalAmount.toFixed(2)}</span>
-                </div>
-              </div>
 
-              <div className="flex flex-col sm:flex-row gap-3">
-                <Button
-                  onClick={handleConfirmSale}
-                  size="lg"
-                  className="flex-1 h-14 md:h-16 text-lg md:text-xl"
-                >
-                  Confirm Sale
-                </Button>
-                <Button
-                  onClick={handleClearBill}
-                  variant="destructive"
-                  size="lg"
-                  className="flex-1 h-14 md:h-16 text-lg md:text-xl"
-                >
-                  Clear Bill
-                </Button>
-              </div>
-            </SheetContent>
-          </Sheet>
+                <div className="flex gap-3">
+                  <Button
+                    onClick={handleConfirmSale}
+                    size="lg"
+                    className="flex-1 h-12 sm:h-14 text-sm sm:text-base"
+                  >
+                    Confirm Sale
+                  </Button>
+                  <Button
+                    onClick={handleClearBill}
+                    variant="destructive"
+                    size="lg"
+                    className="flex-1 h-12 sm:h-14 text-sm sm:text-base"
+                  >
+                    Clear
+                  </Button>
+                </div>
+              </SheetContent>
+            </Sheet>
+          </div>
         )}
       </div>
     </div>

@@ -15,7 +15,7 @@ export const calculateBatchStatus = (
   
   if (expiry < today) return "expired";
   
-  // Check if expiring soon
+  // Check if expiring soon - use exact threshold
   const diffTime = expiry.getTime() - today.getTime();
   const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
   
@@ -33,7 +33,7 @@ export const updateBatchStatuses = (batches: Batch[], expiryThreshold: number = 
 
 export const getTotalQuantityFromBatches = (batches: Batch[]): number => {
   return batches.reduce((total, batch) => {
-    // Only count active and expiring batches, not expired ones
+    // Only count non-expired batches
     if (batch.status !== "expired") {
       return total + batch.quantity;
     }
@@ -42,7 +42,10 @@ export const getTotalQuantityFromBatches = (batches: Batch[]): number => {
 };
 
 export const getEarliestExpiryDate = (batches: Batch[]): string | undefined => {
-  const activeBatches = batches.filter(b => (b.status === "active" || b.status === "expiring_soon") && b.quantity > 0);
+  // Get earliest expiry from active batches with quantity > 0
+  const activeBatches = batches.filter(b => 
+    (b.status === "active" || b.status === "expiring_soon") && b.quantity > 0
+  );
   if (activeBatches.length === 0) return undefined;
   
   return activeBatches.reduce((earliest, batch) => {

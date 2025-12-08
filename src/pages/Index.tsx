@@ -2,7 +2,8 @@ import { useState, useMemo, useEffect } from "react";
 import { Product, ProductFormData } from "@/types/product";
 import { Category, CategoryFormData } from "@/types/category";
 import { Sale } from "@/types/sale";
-import { syncProductWithBatches, deductFromBatches } from "@/utils/batchHelpers";
+import { Batch } from "@/types/batch";
+import { syncProductWithBatches, deductFromBatches, calculateBatchStatus } from "@/utils/batchHelpers";
 import { useLocalStorage } from "@/hooks/useLocalStorage";
 import { useSettings } from "@/hooks/useSettings";
 import { Navigation } from "@/components/Navigation";
@@ -30,7 +31,7 @@ const Index = () => {
   const [showCategoryForm, setShowCategoryForm] = useState(false);
   const { settings } = useSettings();
 
-  // Sync products with batches on mount and when products change
+  // Sync products with batches on mount and when settings change
   useEffect(() => {
     const syncedProducts = products.map(p => syncProductWithBatches(p, settings.expiryAlertDays));
     if (JSON.stringify(syncedProducts) !== JSON.stringify(products)) {
@@ -57,7 +58,8 @@ const Index = () => {
   };
 
   const handleUpdateProduct = (updatedProduct: Product) => {
-    setProducts(products.map(p => p.id === updatedProduct.id ? updatedProduct : p));
+    const syncedProduct = syncProductWithBatches(updatedProduct, settings.expiryAlertDays);
+    setProducts(products.map(p => p.id === syncedProduct.id ? syncedProduct : p));
   };
 
   const handleDeleteProduct = (id: string) => {
@@ -65,7 +67,25 @@ const Index = () => {
     toast.success("Product deleted");
   };
 
-  const handleStockAdjust = (productId: string, newQuantity: number, reason: string) => {
+  const calculateExpiryDate = (duration: number, unit: "days" | "weeks" | "months"): string => {
+    const date = new Date();
+    date.setHours(0, 0, 0, 0);
+    if (unit === "days") {
+      date.setDate(date.getDate() + duration);
+    } else if (unit === "weeks") {
+      date.setDate(date.getDate() + (duration * 7));
+    } else if (unit === "months") {
+      date.setMonth(date.getMonth() + duration);
+    }
+    return date.toISOString();
+  };
+
+  const handleStockAdjust = (
+    productId: string, 
+    newQuantity: number, 
+    reason: string,
+    newBatchData?: { duration: number; durationUnit: "days" | "weeks" | "months" }
+  ) => {
     const product = products.find(p => p.id === productId);
     if (!product) return;
 
@@ -85,44 +105,111 @@ const Index = () => {
       totalAmount: 0,
       itemCount: Math.abs(difference),
       type: "adjustment",
-      adjustmentReason: reason,
+      adjustmentReason: reason || "Manual adjustment",
     };
     
     setSales([adjustmentRecord, ...sales]);
 
-    // Update product quantity
+    let updatedProduct: Product;
+
     if (product.batches && product.batches.length > 0) {
-      // If reducing stock, deduct from batches using FEFO
       if (difference < 0) {
-        const updatedBatches = deductFromBatches(product.batches, Math.abs(difference), settings.expiryAlertDays);
-        const updatedProduct = syncProductWithBatches({
+        // Decreasing stock - use FEFO to deduct from earliest expiring batches
+        // Keep batches with 0 quantity (don't filter them out)
+        const updatedBatches = deductFromBatchesKeepZero(product.batches, Math.abs(difference), settings.expiryAlertDays);
+        updatedProduct = syncProductWithBatches({
           ...product,
           batches: updatedBatches,
         }, settings.expiryAlertDays);
-        setProducts(products.map(p => p.id === productId ? updatedProduct : p));
+      } else if (difference > 0 && newBatchData) {
+        // Increasing stock - create a new batch
+        const expiryDate = calculateExpiryDate(newBatchData.duration, newBatchData.durationUnit);
+        const newBatch: Batch = {
+          id: crypto.randomUUID(),
+          quantity: difference,
+          duration: newBatchData.duration,
+          durationUnit: newBatchData.durationUnit,
+          expiryDate,
+          costPrice: product.costPrice,
+          status: calculateBatchStatus(difference, expiryDate, settings.expiryAlertDays),
+          dateAdded: new Date().toISOString(),
+        };
+        updatedProduct = syncProductWithBatches({
+          ...product,
+          batches: [...product.batches, newBatch],
+        }, settings.expiryAlertDays);
       } else {
-        // If increasing, add to first batch or create new batch
-        const updatedBatches = [...product.batches];
-        if (updatedBatches.length > 0) {
-          updatedBatches[0] = {
-            ...updatedBatches[0],
-            quantity: updatedBatches[0].quantity + difference,
-          };
-        }
-        const updatedProduct = syncProductWithBatches({
-          ...product,
-          batches: updatedBatches,
-        }, settings.expiryAlertDays);
-        setProducts(products.map(p => p.id === productId ? updatedProduct : p));
+        // No change or no batch data provided
+        updatedProduct = product;
       }
     } else {
-      // No batches, just update quantity directly
-      setProducts(products.map(p => 
-        p.id === productId ? { ...p, quantity: newQuantity } : p
-      ));
+      // No batches exist
+      if (difference > 0 && newBatchData) {
+        // Create first batch
+        const expiryDate = calculateExpiryDate(newBatchData.duration, newBatchData.durationUnit);
+        const newBatch: Batch = {
+          id: crypto.randomUUID(),
+          quantity: difference,
+          duration: newBatchData.duration,
+          durationUnit: newBatchData.durationUnit,
+          expiryDate,
+          costPrice: product.costPrice,
+          status: calculateBatchStatus(difference, expiryDate, settings.expiryAlertDays),
+          dateAdded: new Date().toISOString(),
+        };
+        updatedProduct = syncProductWithBatches({
+          ...product,
+          batches: [newBatch],
+        }, settings.expiryAlertDays);
+      } else {
+        // Just update quantity directly for products without batches
+        updatedProduct = { ...product, quantity: newQuantity };
+      }
     }
 
+    setProducts(products.map(p => p.id === productId ? updatedProduct : p));
     toast.success(`Stock adjusted: ${difference > 0 ? '+' : ''}${difference} units`);
+  };
+
+  // FEFO deduction that keeps zero-quantity batches
+  const deductFromBatchesKeepZero = (batches: Batch[], quantityToDeduct: number, expiryThreshold: number): Batch[] => {
+    if (quantityToDeduct <= 0) return batches;
+
+    // Sort batches by expiry date (earliest first), exclude expired batches from deduction
+    const sortedBatchIds = [...batches]
+      .filter(b => b.status !== "expired" && b.quantity > 0)
+      .sort((a, b) => new Date(a.expiryDate).getTime() - new Date(b.expiryDate).getTime())
+      .map(b => b.id);
+
+    let remaining = quantityToDeduct;
+    const updatedBatches = batches.map(batch => {
+      if (!sortedBatchIds.includes(batch.id) || remaining <= 0) {
+        return {
+          ...batch,
+          status: calculateBatchStatus(batch.quantity, batch.expiryDate, expiryThreshold),
+        };
+      }
+
+      const currentQty = batch.quantity;
+      if (currentQty >= remaining) {
+        const newQty = currentQty - remaining;
+        remaining = 0;
+        return {
+          ...batch,
+          quantity: newQty,
+          status: calculateBatchStatus(newQty, batch.expiryDate, expiryThreshold),
+        };
+      } else {
+        remaining -= currentQty;
+        return {
+          ...batch,
+          quantity: 0,
+          status: "out_of_stock" as const,
+        };
+      }
+    });
+
+    return updatedBatches;
   };
 
   const filteredProducts = useMemo(() => {
@@ -131,9 +218,7 @@ const Index = () => {
     if (searchQuery.trim()) {
       const query = searchQuery.toLowerCase();
       filtered = filtered.filter((p) => {
-        // Search by product name
         if (p.name.toLowerCase().includes(query)) return true;
-        // Search by category name
         if (p.categoryId) {
           const category = categories.find(c => c.id === p.categoryId);
           if (category && category.name.toLowerCase().includes(query)) return true;
@@ -147,7 +232,6 @@ const Index = () => {
 
   // Group products by category
   const groupedProducts = useMemo(() => {
-    // If category grouping is disabled or search is active, return empty object
     if (!settings.categoryGrouping || searchQuery.trim()) {
       return {};
     }
@@ -177,11 +261,11 @@ const Index = () => {
   const categoryKeys = Object.keys(groupedProducts);
 
   return (
-    <div className="min-h-screen bg-background p-2 sm:p-4 md:p-8 pb-20 md:pb-24">
+    <div className="min-h-screen bg-background p-2 sm:p-4 md:p-8 pb-24">
       <div className="max-w-4xl mx-auto">
-        <div className="mb-4 md:mb-8">
-          <h1 className="text-2xl md:text-4xl font-bold mb-1 md:mb-2">inven3</h1>
-          <p className="text-sm sm:text-base md:text-xl text-muted-foreground">Simple inventory for shopkeepers</p>
+        <div className="mb-3 sm:mb-4 md:mb-6">
+          <h1 className="text-xl sm:text-2xl md:text-4xl font-bold mb-0.5 md:mb-1">inven3</h1>
+          <p className="text-xs sm:text-sm md:text-lg text-muted-foreground">Simple inventory for shopkeepers</p>
         </div>
 
         <Navigation />
@@ -190,22 +274,22 @@ const Index = () => {
 
         <SearchBar value={searchQuery} onChange={setSearchQuery} placeholder="Search products or categories..." />
 
-        <div className="space-y-3">
+        <div className="space-y-2.5 sm:space-y-3">
           {filteredProducts.length === 0 ? (
-            <div className="text-center py-12 md:py-16">
-              <p className="text-base sm:text-lg md:text-2xl text-muted-foreground px-4">
-                {searchQuery ? "No products found" : "No products yet. Click the + button to add your first product!"}
+            <div className="text-center py-10 md:py-16">
+              <p className="text-sm sm:text-base md:text-xl text-muted-foreground px-4">
+                {searchQuery ? "No products found" : "No products yet. Click + to add your first product!"}
               </p>
             </div>
           ) : hasCategories && categoryKeys.length > 0 ? (
-            <Accordion type="single" collapsible className="space-y-3">
+            <Accordion type="single" collapsible className="space-y-2.5">
               {categoryKeys.map((categoryName) => (
                 <AccordionItem key={categoryName} value={categoryName} className="border-2 rounded-lg overflow-hidden">
-                  <AccordionTrigger className="px-3 sm:px-4 md:px-6 py-3 text-lg sm:text-xl md:text-2xl font-bold hover:no-underline">
+                  <AccordionTrigger className="px-3 sm:px-4 py-2.5 sm:py-3 text-base sm:text-lg md:text-xl font-bold hover:no-underline">
                     {categoryName} ({groupedProducts[categoryName].length})
                   </AccordionTrigger>
-                  <AccordionContent className="px-2 sm:px-3 md:px-4 pb-3">
-                    <div className="space-y-3">
+                  <AccordionContent className="px-2 sm:px-3 pb-2.5">
+                    <div className="space-y-2.5">
                       {groupedProducts[categoryName].map((product) => (
                         <StockProductCard
                           key={product.id}
