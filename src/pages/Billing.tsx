@@ -174,6 +174,7 @@ const Billing = () => {
       items: billItems,
       totalAmount,
       itemCount,
+      type: "sale",
     };
     setSales([newSale, ...sales]);
 

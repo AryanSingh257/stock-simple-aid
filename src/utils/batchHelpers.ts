@@ -9,7 +9,9 @@ export const calculateBatchStatus = (
   if (quantity === 0) return "out_of_stock";
   
   const today = new Date();
+  today.setHours(0, 0, 0, 0);
   const expiry = new Date(expiryDate);
+  expiry.setHours(0, 0, 0, 0);
   
   if (expiry < today) return "expired";
   
@@ -40,7 +42,7 @@ export const getTotalQuantityFromBatches = (batches: Batch[]): number => {
 };
 
 export const getEarliestExpiryDate = (batches: Batch[]): string | undefined => {
-  const activeBatches = batches.filter(b => b.status === "active" && b.quantity > 0);
+  const activeBatches = batches.filter(b => (b.status === "active" || b.status === "expiring_soon") && b.quantity > 0);
   if (activeBatches.length === 0) return undefined;
   
   return activeBatches.reduce((earliest, batch) => {

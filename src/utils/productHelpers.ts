@@ -18,17 +18,21 @@ export const isExpiringSoon = (product: Product, daysThreshold: number = 14): bo
   if (!product.batches || product.batches.length === 0) {
     if (!product.expiryDate) return false;
     const today = new Date();
+    today.setHours(0, 0, 0, 0);
     const expiry = new Date(product.expiryDate);
+    expiry.setHours(0, 0, 0, 0);
     const diffTime = expiry.getTime() - today.getTime();
     const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
     return diffDays <= daysThreshold && diffDays >= 0;
   }
   
   const today = new Date();
+  today.setHours(0, 0, 0, 0);
   
   return product.batches.some(batch => {
     if (batch.status === "expired" || batch.quantity === 0) return false;
     const expiry = new Date(batch.expiryDate);
+    expiry.setHours(0, 0, 0, 0);
     const diffTime = expiry.getTime() - today.getTime();
     const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
     return diffDays <= daysThreshold && diffDays >= 0;

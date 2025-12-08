@@ -42,7 +42,9 @@ export const NearestExpiryCard = ({ products }: NearestExpiryCardProps) => {
 
   const { product, batch } = nearestExpiry;
   const today = new Date();
+  today.setHours(0, 0, 0, 0);
   const expiry = new Date(batch.expiryDate);
+  expiry.setHours(0, 0, 0, 0);
   const daysLeft = Math.ceil((expiry.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
 
   const getAlertColor = () => {

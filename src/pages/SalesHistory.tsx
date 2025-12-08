@@ -192,24 +192,38 @@ const SalesHistory = () => {
             </div>
             <div className="space-y-3 md:space-y-4 max-h-[500px] md:max-h-[600px] overflow-y-auto pr-1 md:pr-2">
               {sales.slice().reverse().map((sale) => (
-                <Card key={sale.id} className="p-4 md:p-6">
+                <Card key={sale.id} className={`p-4 md:p-6 ${sale.type === 'adjustment' ? 'border-amber-500/50 bg-amber-50/50 dark:bg-amber-950/20' : ''}`}>
                   <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start mb-3 md:mb-4 gap-2">
                     <div>
-                      <p className="text-xl md:text-2xl font-semibold">
-                        {formatDate(sale.timestamp)}
-                      </p>
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <p className="text-xl md:text-2xl font-semibold">
+                          {formatDate(sale.timestamp)}
+                        </p>
+                        {sale.type === 'adjustment' && (
+                          <span className="px-2 py-0.5 bg-amber-500/20 text-amber-700 dark:text-amber-400 text-xs font-medium rounded">
+                            Stock Adjustment
+                          </span>
+                        )}
+                      </div>
                       <p className="text-base md:text-lg text-muted-foreground">
                         {formatTime(sale.timestamp)}
                       </p>
+                      {sale.type === 'adjustment' && sale.adjustmentReason && (
+                        <p className="text-sm text-muted-foreground capitalize mt-1">
+                          Reason: {sale.adjustmentReason.replace('_', ' ')}
+                        </p>
+                      )}
                     </div>
                     <div className="text-left sm:text-right">
-                      <p className="text-2xl md:text-3xl font-bold">₹{sale.totalAmount.toFixed(2)}</p>
+                      {sale.type !== 'adjustment' && (
+                        <p className="text-2xl md:text-3xl font-bold">₹{sale.totalAmount.toFixed(2)}</p>
+                      )}
                     </div>
                   </div>
 
                   <div className="border-t pt-3 md:pt-4">
                     <p className="text-base md:text-lg mb-2 md:mb-3">
-                      <span className="font-semibold">{sale.itemCount}</span> items sold
+                      <span className="font-semibold">{sale.itemCount}</span> {sale.type === 'adjustment' ? 'units adjusted' : 'items sold'}
                     </p>
                     <div className="space-y-2">
                       {sale.items.map((item, index) => (
@@ -217,7 +231,9 @@ const SalesHistory = () => {
                           <span className="break-words">
                             {item.name} <span className="text-muted-foreground">× {item.quantity}</span>
                           </span>
-                          <span className="font-semibold">₹{item.subtotal.toFixed(2)}</span>
+                          {sale.type !== 'adjustment' && (
+                            <span className="font-semibold">₹{item.subtotal.toFixed(2)}</span>
+                          )}
                         </div>
                       ))}
                     </div>
