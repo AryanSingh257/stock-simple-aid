@@ -12,4 +12,6 @@ export interface Sale {
   items: SaleItem[];
   totalAmount: number;
   itemCount: number;
+  type?: "sale" | "adjustment";
+  adjustmentReason?: string;
 }

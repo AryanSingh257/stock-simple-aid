@@ -1,17 +1,17 @@
 import { useState, useMemo, useEffect } from "react";
 import { Product, ProductFormData } from "@/types/product";
 import { Category, CategoryFormData } from "@/types/category";
-import { syncProductWithBatches } from "@/utils/batchHelpers";
+import { Sale } from "@/types/sale";
+import { syncProductWithBatches, deductFromBatches } from "@/utils/batchHelpers";
 import { useLocalStorage } from "@/hooks/useLocalStorage";
 import { useSettings } from "@/hooks/useSettings";
 import { Navigation } from "@/components/Navigation";
 import { SearchBar } from "@/components/SearchBar";
 import { AddProductForm } from "@/components/AddProductForm";
 import { AddCategoryForm } from "@/components/AddCategoryForm";
-import { ProductCard } from "@/components/ProductCard";
+import { StockProductCard } from "@/components/StockProductCard";
 import { FloatingActionButton } from "@/components/FloatingActionButton";
 import { NearestExpiryCard } from "@/components/NearestExpiryCard";
-import { Button } from "@/components/ui/button";
 import {
   Accordion,
   AccordionContent,
@@ -24,6 +24,7 @@ import { toast } from "sonner";
 const Index = () => {
   const [products, setProducts] = useLocalStorage<Product[]>("stockease-products", []);
   const [categories, setCategories] = useLocalStorage<Category[]>("stockease-categories", []);
+  const [sales, setSales] = useLocalStorage<Sale[]>("stockease-sales", []);
   const [searchQuery, setSearchQuery] = useState("");
   const [showProductForm, setShowProductForm] = useState(false);
   const [showCategoryForm, setShowCategoryForm] = useState(false);
@@ -59,36 +60,95 @@ const Index = () => {
     setProducts(products.map(p => p.id === updatedProduct.id ? updatedProduct : p));
   };
 
-  const handleUpdateQuantity = (id: string, delta: number) => {
-    setProducts(
-      products.map((p) =>
-        p.id === id ? { ...p, quantity: Math.max(0, p.quantity + delta) } : p
-      )
-    );
-    toast.success(delta > 0 ? "Stock increased" : "Stock decreased");
-  };
-
   const handleDeleteProduct = (id: string) => {
     setProducts(products.filter((p) => p.id !== id));
     toast.success("Product deleted");
+  };
+
+  const handleStockAdjust = (productId: string, newQuantity: number, reason: string) => {
+    const product = products.find(p => p.id === productId);
+    if (!product) return;
+
+    const difference = newQuantity - product.quantity;
+    
+    // Create adjustment record in sales history
+    const adjustmentRecord: Sale = {
+      id: crypto.randomUUID(),
+      timestamp: new Date().toISOString(),
+      items: [{
+        productId: product.id,
+        name: product.name,
+        quantity: Math.abs(difference),
+        price: 0,
+        subtotal: 0,
+      }],
+      totalAmount: 0,
+      itemCount: Math.abs(difference),
+      type: "adjustment",
+      adjustmentReason: reason,
+    };
+    
+    setSales([adjustmentRecord, ...sales]);
+
+    // Update product quantity
+    if (product.batches && product.batches.length > 0) {
+      // If reducing stock, deduct from batches using FEFO
+      if (difference < 0) {
+        const updatedBatches = deductFromBatches(product.batches, Math.abs(difference), settings.expiryAlertDays);
+        const updatedProduct = syncProductWithBatches({
+          ...product,
+          batches: updatedBatches,
+        }, settings.expiryAlertDays);
+        setProducts(products.map(p => p.id === productId ? updatedProduct : p));
+      } else {
+        // If increasing, add to first batch or create new batch
+        const updatedBatches = [...product.batches];
+        if (updatedBatches.length > 0) {
+          updatedBatches[0] = {
+            ...updatedBatches[0],
+            quantity: updatedBatches[0].quantity + difference,
+          };
+        }
+        const updatedProduct = syncProductWithBatches({
+          ...product,
+          batches: updatedBatches,
+        }, settings.expiryAlertDays);
+        setProducts(products.map(p => p.id === productId ? updatedProduct : p));
+      }
+    } else {
+      // No batches, just update quantity directly
+      setProducts(products.map(p => 
+        p.id === productId ? { ...p, quantity: newQuantity } : p
+      ));
+    }
+
+    toast.success(`Stock adjusted: ${difference > 0 ? '+' : ''}${difference} units`);
   };
 
   const filteredProducts = useMemo(() => {
     let filtered = products;
     
     if (searchQuery.trim()) {
-      filtered = filtered.filter((p) =>
-        p.name.toLowerCase().includes(searchQuery.toLowerCase())
-      );
+      const query = searchQuery.toLowerCase();
+      filtered = filtered.filter((p) => {
+        // Search by product name
+        if (p.name.toLowerCase().includes(query)) return true;
+        // Search by category name
+        if (p.categoryId) {
+          const category = categories.find(c => c.id === p.categoryId);
+          if (category && category.name.toLowerCase().includes(query)) return true;
+        }
+        return false;
+      });
     }
     
     return sortProducts(filtered, settings.lowStockThreshold, settings.expiryAlertDays);
-  }, [products, searchQuery, settings.lowStockThreshold, settings.expiryAlertDays]);
+  }, [products, searchQuery, categories, settings.lowStockThreshold, settings.expiryAlertDays]);
 
   // Group products by category
   const groupedProducts = useMemo(() => {
-    // If category grouping is disabled, return empty object
-    if (!settings.categoryGrouping) {
+    // If category grouping is disabled or search is active, return empty object
+    if (!settings.categoryGrouping || searchQuery.trim()) {
       return {};
     }
 
@@ -111,48 +171,48 @@ const Index = () => {
     });
 
     return groups;
-  }, [filteredProducts, categories, settings.categoryGrouping]);
+  }, [filteredProducts, categories, settings.categoryGrouping, searchQuery]);
 
-  const hasCategories = categories.length > 0 && settings.categoryGrouping;
+  const hasCategories = categories.length > 0 && settings.categoryGrouping && !searchQuery.trim();
   const categoryKeys = Object.keys(groupedProducts);
 
   return (
-    <div className="min-h-screen bg-background p-2 sm:p-4 md:p-8 pb-16 md:pb-24">
+    <div className="min-h-screen bg-background p-2 sm:p-4 md:p-8 pb-20 md:pb-24">
       <div className="max-w-4xl mx-auto">
         <div className="mb-4 md:mb-8">
           <h1 className="text-2xl md:text-4xl font-bold mb-1 md:mb-2">inven3</h1>
-          <p className="text-base md:text-xl text-muted-foreground">Simple inventory for shopkeepers</p>
+          <p className="text-sm sm:text-base md:text-xl text-muted-foreground">Simple inventory for shopkeepers</p>
         </div>
 
         <Navigation />
 
         <NearestExpiryCard products={products} />
 
-        <SearchBar value={searchQuery} onChange={setSearchQuery} />
+        <SearchBar value={searchQuery} onChange={setSearchQuery} placeholder="Search products or categories..." />
 
-        <div className="space-y-3 md:space-y-4">
+        <div className="space-y-3">
           {filteredProducts.length === 0 ? (
             <div className="text-center py-12 md:py-16">
-              <p className="text-lg md:text-2xl text-muted-foreground px-4">
+              <p className="text-base sm:text-lg md:text-2xl text-muted-foreground px-4">
                 {searchQuery ? "No products found" : "No products yet. Click the + button to add your first product!"}
               </p>
             </div>
           ) : hasCategories && categoryKeys.length > 0 ? (
-            <Accordion type="single" collapsible className="space-y-3 md:space-y-4">
+            <Accordion type="single" collapsible className="space-y-3">
               {categoryKeys.map((categoryName) => (
-                <AccordionItem key={categoryName} value={categoryName} className="border-2 rounded-lg">
-                  <AccordionTrigger className="px-4 md:px-6 py-3 md:py-4 text-xl md:text-2xl font-bold hover:no-underline">
+                <AccordionItem key={categoryName} value={categoryName} className="border-2 rounded-lg overflow-hidden">
+                  <AccordionTrigger className="px-3 sm:px-4 md:px-6 py-3 text-lg sm:text-xl md:text-2xl font-bold hover:no-underline">
                     {categoryName} ({groupedProducts[categoryName].length})
                   </AccordionTrigger>
-                  <AccordionContent className="px-3 md:px-4 pb-3 md:pb-4">
-                    <div className="space-y-3 md:space-y-4">
+                  <AccordionContent className="px-2 sm:px-3 md:px-4 pb-3">
+                    <div className="space-y-3">
                       {groupedProducts[categoryName].map((product) => (
-                        <ProductCard
+                        <StockProductCard
                           key={product.id}
                           product={product}
-                          onUpdateQuantity={handleUpdateQuantity}
                           onDelete={handleDeleteProduct}
                           onUpdateProduct={handleUpdateProduct}
+                          onStockAdjust={handleStockAdjust}
                           categories={categories}
                         />
                       ))}
@@ -163,12 +223,12 @@ const Index = () => {
             </Accordion>
           ) : (
             filteredProducts.map((product) => (
-              <ProductCard
+              <StockProductCard
                 key={product.id}
                 product={product}
-                onUpdateQuantity={handleUpdateQuantity}
                 onDelete={handleDeleteProduct}
                 onUpdateProduct={handleUpdateProduct}
+                onStockAdjust={handleStockAdjust}
                 categories={categories}
               />
             ))
