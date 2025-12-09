@@ -24,7 +24,7 @@ All colors MUST be HSL.
     --secondary-foreground: 0 0% 0%;
 
     --muted: 0 0% 96%;
-    --muted-foreground: 0 0% 45%;
+    --muted-foreground: 0 0% 35%;
 
     --accent: 0 0% 96%;
     --accent-foreground: 0 0% 0%;
@@ -32,8 +32,8 @@ All colors MUST be HSL.
     --destructive: 0 72% 51%;
     --destructive-foreground: 0 0% 100%;
 
-    --border: 0 0% 90%;
-    --input: 0 0% 90%;
+    --border: 0 0% 85%;
+    --input: 0 0% 85%;
     --ring: 0 0% 0%;
 
     --success: 142 76% 36%;
@@ -71,5 +71,40 @@ All colors MUST be HSL.
 
   input, select, textarea {
     font-size: 18px;
+  }
+}
+
+/* Mobile portrait optimizations */
+@layer utilities {
+  /* Tap feedback animation */
+  .tap-feedback {
+    @apply transition-transform duration-100 active:scale-95;
+  }
+
+  /* Smooth accordion/batch transitions */
+  .smooth-expand {
+    @apply transition-all duration-200 ease-out;
+  }
+}
+
+/* Mobile-specific popup font scaling */
+@media (max-width: 639px) and (orientation: portrait) {
+  [role="dialog"] {
+    font-size: 14px;
+  }
+  
+  [role="dialog"] h2,
+  [role="dialog"] [data-sheet-title] {
+    font-size: 1.125rem !important;
+  }
+  
+  [role="dialog"] label {
+    font-size: 0.875rem !important;
+  }
+  
+  [role="dialog"] input,
+  [role="dialog"] select,
+  [role="dialog"] [data-radix-collection-item] {
+    font-size: 1rem !important;
   }
 }
