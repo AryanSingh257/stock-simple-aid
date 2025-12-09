@@ -17,24 +17,24 @@ export const FloatingActionButton = ({ onAddProduct, onAddCategory }: FloatingAc
   };
 
   return (
-    <div className="fixed bottom-4 right-4 md:bottom-6 md:right-6 z-50">
+    <div className="fixed bottom-20 right-3 sm:bottom-6 sm:right-6 z-50 pb-safe">
       {isOpen && (
-        <div className="absolute bottom-16 right-0 flex flex-col gap-2 mb-2">
+        <div className="absolute bottom-16 right-0 flex flex-col gap-2 mb-2 animate-fade-in">
           <Button
             onClick={() => handleAction(onAddProduct)}
             size="lg"
-            className="h-12 md:h-14 gap-2 text-base md:text-lg shadow-lg whitespace-nowrap px-4 md:px-6"
+            className="h-11 sm:h-14 gap-2 text-sm sm:text-lg shadow-lg whitespace-nowrap px-3 sm:px-6 tap-feedback"
           >
-            <Package className="h-4 w-4 md:h-5 md:w-5" />
+            <Package className="h-4 w-4 sm:h-5 sm:w-5" />
             Add Product
           </Button>
           <Button
             onClick={() => handleAction(onAddCategory)}
             size="lg"
             variant="secondary"
-            className="h-12 md:h-14 gap-2 text-base md:text-lg shadow-lg whitespace-nowrap px-4 md:px-6"
+            className="h-11 sm:h-14 gap-2 text-sm sm:text-lg shadow-lg whitespace-nowrap px-3 sm:px-6 tap-feedback"
           >
-            <FolderPlus className="h-4 w-4 md:h-5 md:w-5" />
+            <FolderPlus className="h-4 w-4 sm:h-5 sm:w-5" />
             Add Category
           </Button>
         </div>
@@ -44,11 +44,11 @@ export const FloatingActionButton = ({ onAddProduct, onAddCategory }: FloatingAc
         onClick={() => setIsOpen(!isOpen)}
         size="lg"
         className={cn(
-          "h-14 w-14 md:h-16 md:w-16 rounded-full shadow-xl transition-transform",
+          "h-12 w-12 sm:h-16 sm:w-16 rounded-full shadow-xl transition-all duration-200 tap-feedback",
           isOpen && "rotate-45"
         )}
       >
-        <Plus className="h-6 w-6 md:h-8 md:w-8" />
+        <Plus className="h-5 w-5 sm:h-8 sm:w-8" />
       </Button>
     </div>
   );

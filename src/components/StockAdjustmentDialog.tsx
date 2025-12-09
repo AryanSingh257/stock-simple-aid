@@ -93,32 +93,32 @@ export const StockAdjustmentDialog = ({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="w-[95vw] max-w-md max-h-[90vh] overflow-y-auto">
-        <DialogHeader>
-          <DialogTitle className="text-lg sm:text-xl">Adjust Stock: {product.name}</DialogTitle>
+      <DialogContent className="w-[92vw] max-w-sm max-h-[80vh] overflow-y-auto p-4 sm:p-6">
+        <DialogHeader className="pb-2">
+          <DialogTitle className="text-base sm:text-lg leading-tight pr-6">
+            Adjust: {product.name}
+          </DialogTitle>
         </DialogHeader>
 
-        <form onSubmit={handleSubmit} className="space-y-4 pt-2">
-          <div className="space-y-1.5">
-            <Label className="text-sm sm:text-base">Current Stock</Label>
-            <div className="text-xl sm:text-2xl font-bold text-muted-foreground">
-              {product.quantity} units
-            </div>
+        <form onSubmit={handleSubmit} className="space-y-3">
+          <div className="flex items-center justify-between">
+            <span className="text-xs sm:text-sm text-muted-foreground">Current</span>
+            <span className="text-lg sm:text-xl font-bold">{product.quantity}</span>
           </div>
 
-          <div className="space-y-1.5">
-            <Label htmlFor="newQuantity" className="text-sm sm:text-base">New Stock Amount</Label>
+          <div className="space-y-1">
+            <Label htmlFor="newQuantity" className="text-xs sm:text-sm">New Amount</Label>
             <Input
               id="newQuantity"
               type="number"
               min="0"
               value={newQuantity}
               onChange={(e) => setNewQuantity(e.target.value)}
-              className="h-11 sm:h-12 text-base sm:text-lg"
-              placeholder="Enter new quantity"
+              className="h-11 text-base"
+              placeholder="Enter quantity"
             />
             {!isNaN(parseInt(newQuantity, 10)) && quantityDifference !== 0 && (
-              <div className={`text-sm font-medium ${quantityDifference > 0 ? 'text-green-600' : 'text-red-600'}`}>
+              <div className={`text-xs font-medium ${quantityDifference > 0 ? 'text-green-600' : 'text-destructive'}`}>
                 {quantityDifference > 0 ? '+' : ''}{quantityDifference} units
               </div>
             )}
@@ -126,28 +126,27 @@ export const StockAdjustmentDialog = ({
 
           {/* Show duration fields only when increasing stock */}
           {isIncreasing && (
-            <div className="space-y-3 p-3 bg-green-50 border border-green-200 rounded-lg">
-              <p className="text-sm font-medium text-green-800">New batch will be created for added stock</p>
-              <div className="grid grid-cols-2 gap-3">
-                <div className="space-y-1.5">
-                  <Label htmlFor="duration" className="text-sm">Expiry Duration</Label>
+            <div className="space-y-2 p-2.5 bg-green-50 border border-green-200 rounded-lg">
+              <p className="text-xs font-medium text-green-800">New batch created</p>
+              <div className="grid grid-cols-2 gap-2">
+                <div className="space-y-1">
+                  <Label htmlFor="duration" className="text-xs">Duration</Label>
                   <Input
                     id="duration"
                     type="number"
                     min="1"
                     value={duration}
                     onChange={(e) => setDuration(e.target.value)}
-                    className="h-10 text-base"
-                    placeholder="Duration"
+                    className="h-10 text-sm"
                   />
                 </div>
-                <div className="space-y-1.5">
-                  <Label htmlFor="durationUnit" className="text-sm">Unit</Label>
+                <div className="space-y-1">
+                  <Label htmlFor="durationUnit" className="text-xs">Unit</Label>
                   <Select value={durationUnit} onValueChange={(v) => setDurationUnit(v as "days" | "weeks" | "months")}>
-                    <SelectTrigger className="h-10 text-base">
+                    <SelectTrigger className="h-10 text-sm">
                       <SelectValue />
                     </SelectTrigger>
-                    <SelectContent className="bg-background border z-50">
+                    <SelectContent className="bg-background border-2 z-50">
                       <SelectItem value="days">Days</SelectItem>
                       <SelectItem value="weeks">Weeks</SelectItem>
                       <SelectItem value="months">Months</SelectItem>
@@ -158,17 +157,17 @@ export const StockAdjustmentDialog = ({
             </div>
           )}
 
-          <div className="space-y-1.5">
-            <Label htmlFor="reason" className="text-sm sm:text-base">
-              Reason <span className="text-muted-foreground text-xs">(optional)</span>
+          <div className="space-y-1">
+            <Label htmlFor="reason" className="text-xs sm:text-sm">
+              Reason <span className="text-muted-foreground">(opt)</span>
             </Label>
             <Select value={reason} onValueChange={setReason}>
-              <SelectTrigger className="h-11 sm:h-12 text-sm sm:text-base">
-                <SelectValue placeholder="Select a reason (optional)" />
+              <SelectTrigger className="h-10 text-sm">
+                <SelectValue placeholder="Optional" />
               </SelectTrigger>
-              <SelectContent className="bg-background border z-50">
+              <SelectContent className="bg-background border-2 z-50">
                 {adjustmentReasons.map((r) => (
-                  <SelectItem key={r.value} value={r.value} className="text-sm sm:text-base py-2.5">
+                  <SelectItem key={r.value} value={r.value} className="text-sm py-2">
                     {r.label}
                   </SelectItem>
                 ))}
@@ -176,18 +175,18 @@ export const StockAdjustmentDialog = ({
             </Select>
           </div>
 
-          <div className="flex gap-3 pt-2">
+          <div className="flex gap-2 pt-2">
             <Button
               type="button"
               variant="outline"
               onClick={() => onOpenChange(false)}
-              className="flex-1 h-11 sm:h-12 text-sm sm:text-base"
+              className="flex-1 h-11 text-sm tap-feedback"
             >
               Cancel
             </Button>
             <Button
               type="submit"
-              className="flex-1 h-11 sm:h-12 bg-primary text-sm sm:text-base"
+              className="flex-1 h-11 text-sm tap-feedback"
             >
               Save
             </Button>

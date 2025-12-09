@@ -26,6 +26,7 @@ const Billing = () => {
   const [billItems, setBillItems] = useState<SaleItem[]>([]);
   const [isSheetOpen, setIsSheetOpen] = useState(false);
   const { settings } = useSettings();
+  const [expandedCategory, setExpandedCategory] = useState<string | undefined>(undefined);
 
   const filteredProducts = useMemo(() => {
     return products.filter(
@@ -199,79 +200,78 @@ const Billing = () => {
   const categoryKeys = Object.keys(groupedProducts);
 
   return (
-    <div className="min-h-screen bg-background p-2 sm:p-4 md:p-8 pb-24">
+    <div className="min-h-screen bg-background p-2 sm:p-4 md:p-8 pb-28">
       <div className="max-w-4xl mx-auto">
         <div className="mb-3 sm:mb-4 md:mb-6">
           <h1 className="text-xl sm:text-2xl md:text-4xl font-bold mb-0.5 md:mb-1">Billing</h1>
-          <p className="text-xs sm:text-sm md:text-lg text-muted-foreground">Select products and create bills</p>
+          <p className="text-xs sm:text-sm md:text-lg text-muted-foreground">Select products to bill</p>
         </div>
 
         <Navigation />
         
         <SearchBar value={searchQuery} onChange={setSearchQuery} placeholder="Search products..." />
 
-        <div className="space-y-2.5 mb-20">
+        <div className="space-y-2 mb-24">
           {categoryKeys.length === 0 ? (
             <div className="text-center py-10 md:py-16">
               <p className="text-sm sm:text-base md:text-xl text-muted-foreground">
-                {searchQuery ? "No products found" : "No products available for billing"}
+                {searchQuery ? "No products found" : "No products available"}
               </p>
             </div>
           ) : (
-            <Accordion type="single" collapsible className="space-y-2.5">
+            <Accordion 
+              type="single" 
+              collapsible 
+              className="space-y-2"
+              value={expandedCategory}
+              onValueChange={setExpandedCategory}
+            >
               {categoryKeys.map((categoryName) => (
                 <AccordionItem key={categoryName} value={categoryName} className="border-2 rounded-lg overflow-hidden">
-                  <AccordionTrigger className="px-3 sm:px-4 py-2.5 sm:py-3 text-base sm:text-lg md:text-xl font-bold hover:no-underline">
+                  <AccordionTrigger className="px-3 sm:px-4 py-2 sm:py-3 text-sm sm:text-lg md:text-xl font-bold hover:no-underline">
                     {categoryName} ({groupedProducts[categoryName].length})
                   </AccordionTrigger>
-                  <AccordionContent className="px-2 sm:px-3 pb-2.5">
-                    <div className="space-y-2.5">
+                  <AccordionContent className="px-2 sm:px-3 pb-2">
+                    <div className="space-y-2">
                       {groupedProducts[categoryName].map((product) => {
                         const qtyInBill = getItemQuantity(product.id);
                         const isPurchased = (product.purchaseCount || 0) > 0;
                         return (
                           <div
                             key={product.id}
-                            className={`bg-card border-2 border-border rounded-lg p-3 sm:p-4 ${isPurchased ? 'border-primary/30' : ''}`}
+                            className={`bg-card border-2 border-border rounded-lg p-2.5 sm:p-4 ${isPurchased ? 'border-primary/30' : ''} ${qtyInBill > 0 ? 'ring-2 ring-primary/50' : ''}`}
                           >
-                            <div className="mb-3">
-                              <h3 className="text-base sm:text-lg font-semibold mb-1 break-words leading-tight">
-                                {product.name}
-                                {isPurchased && (
-                                  <span className="ml-2 text-xs font-normal text-muted-foreground">
-                                    ({product.purchaseCount} sold)
-                                  </span>
-                                )}
-                              </h3>
-                              <div className="flex gap-4 text-xs sm:text-sm">
-                                <p>
-                                  Price: <span className="font-semibold">₹{(product.sellingPrice || 0).toFixed(0)}</span>
-                                </p>
-                                <p>
-                                  Stock: <span className="font-semibold">{product.quantity}</span>
-                                </p>
+                            <div className="flex items-center justify-between gap-2">
+                              <div className="flex-1 min-w-0">
+                                <h3 className="text-sm sm:text-base font-semibold truncate leading-tight">
+                                  {product.name}
+                                </h3>
+                                <div className="flex gap-3 text-[11px] sm:text-sm text-muted-foreground">
+                                  <span>₹{(product.sellingPrice || 0).toFixed(0)}</span>
+                                  <span>{product.quantity} left</span>
+                                </div>
                               </div>
-                            </div>
-                            <div className="flex items-center gap-2 sm:gap-3">
-                              <Button
-                                onClick={() => handleDecrease(product.id)}
-                                size="lg"
-                                variant="destructive"
-                                className="h-10 w-10 sm:h-12 sm:w-12 text-lg flex-shrink-0 p-0"
-                                disabled={qtyInBill === 0}
-                              >
-                                <Minus className="h-4 w-4 sm:h-5 sm:w-5" />
-                              </Button>
-                              <div className="flex-1 text-center">
-                                <p className="text-base sm:text-lg font-semibold">Qty: {qtyInBill}</p>
+                              <div className="flex items-center gap-1.5 sm:gap-2 flex-shrink-0">
+                                <Button
+                                  onClick={() => handleDecrease(product.id)}
+                                  size="sm"
+                                  variant="destructive"
+                                  className="h-9 w-9 sm:h-11 sm:w-11 p-0 tap-feedback"
+                                  disabled={qtyInBill === 0}
+                                >
+                                  <Minus className="h-4 w-4" />
+                                </Button>
+                                <div className="w-8 sm:w-10 text-center">
+                                  <span className="text-sm sm:text-lg font-bold">{qtyInBill}</span>
+                                </div>
+                                <Button
+                                  onClick={() => handleIncrease(product.id)}
+                                  size="sm"
+                                  className="h-9 w-9 sm:h-11 sm:w-11 p-0 tap-feedback"
+                                >
+                                  <Plus className="h-4 w-4" />
+                                </Button>
                               </div>
-                              <Button
-                                onClick={() => handleIncrease(product.id)}
-                                size="lg"
-                                className="h-10 w-10 sm:h-12 sm:w-12 text-lg flex-shrink-0 p-0"
-                              >
-                                <Plus className="h-4 w-4 sm:h-5 sm:w-5" />
-                              </Button>
                             </div>
                           </div>
                         );
@@ -284,61 +284,57 @@ const Billing = () => {
           )}
         </div>
 
-        {/* Floating total bar for mobile */}
+        {/* Floating total bar */}
         {billItems.length > 0 && (
-          <div className="fixed bottom-0 left-0 right-0 bg-background border-t-2 p-3 sm:p-4 z-40 flex items-center justify-between gap-3">
-            <div className="flex-1">
-              <p className="text-xs sm:text-sm text-muted-foreground">{itemCount} items</p>
-              <p className="text-lg sm:text-xl font-bold">₹{totalAmount.toFixed(0)}</p>
+          <div className="fixed bottom-0 left-0 right-0 bg-background border-t-2 p-2.5 sm:p-4 z-40 flex items-center justify-between gap-2 shadow-lg">
+            <div className="flex-1 min-w-0">
+              <p className="text-[10px] sm:text-sm text-muted-foreground">{itemCount} items</p>
+              <p className="text-base sm:text-xl font-bold">₹{totalAmount.toFixed(0)}</p>
             </div>
             <Sheet open={isSheetOpen} onOpenChange={setIsSheetOpen}>
               <SheetTrigger asChild>
-                <Button size="lg" className="h-11 sm:h-12 px-6 text-sm sm:text-base">
-                  <Receipt className="h-4 w-4 sm:h-5 sm:w-5 mr-2" />
-                  View Bill
+                <Button size="lg" className="h-10 sm:h-12 px-4 sm:px-6 text-sm tap-feedback">
+                  <Receipt className="h-4 w-4 mr-1.5" />
+                  Bill
                 </Button>
               </SheetTrigger>
-              <SheetContent side="bottom" className="h-[80vh] p-3 sm:p-4 md:p-6">
+              <SheetContent side="bottom" className="h-[75vh] p-3 sm:p-6">
                 <SheetHeader>
-                  <SheetTitle className="text-xl sm:text-2xl font-bold">Bill Summary</SheetTitle>
+                  <SheetTitle className="text-lg sm:text-2xl font-bold">Bill Summary</SheetTitle>
                 </SheetHeader>
                 
-                <div className="mt-3 sm:mt-4 space-y-2 mb-3 max-h-[40vh] overflow-y-auto">
+                <div className="mt-3 space-y-1.5 mb-3 max-h-[35vh] overflow-y-auto">
                   {billItems.map((item) => (
-                    <div key={item.productId} className="flex justify-between items-center border-b pb-2 gap-2">
+                    <div key={item.productId} className="flex justify-between items-center border-b pb-1.5 gap-2">
                       <div className="flex-1 min-w-0">
-                        <p className="text-sm sm:text-base font-medium truncate">{item.name}</p>
-                        <p className="text-xs sm:text-sm text-muted-foreground">Qty: {item.quantity} × ₹{item.price}</p>
+                        <p className="text-sm font-medium truncate">{item.name}</p>
+                        <p className="text-xs text-muted-foreground">{item.quantity} × ₹{item.price}</p>
                       </div>
-                      <p className="text-sm sm:text-base font-semibold whitespace-nowrap">₹{item.subtotal.toFixed(0)}</p>
+                      <p className="text-sm font-semibold whitespace-nowrap">₹{item.subtotal.toFixed(0)}</p>
                     </div>
                   ))}
                 </div>
 
-                <div className="mb-4 pt-3 border-t-2">
-                  <div className="flex justify-between items-center mb-1">
-                    <span className="text-base sm:text-lg">Items:</span>
-                    <span className="text-base sm:text-lg font-bold">{itemCount}</span>
-                  </div>
+                <div className="mb-3 pt-2 border-t-2">
                   <div className="flex justify-between items-center">
-                    <span className="text-xl sm:text-2xl font-bold">Total:</span>
-                    <span className="text-xl sm:text-2xl font-bold">₹{totalAmount.toFixed(0)}</span>
+                    <span className="text-lg sm:text-xl font-bold">Total:</span>
+                    <span className="text-lg sm:text-xl font-bold">₹{totalAmount.toFixed(0)}</span>
                   </div>
                 </div>
 
-                <div className="flex gap-3">
+                <div className="flex gap-2">
                   <Button
                     onClick={handleConfirmSale}
                     size="lg"
-                    className="flex-1 h-12 sm:h-14 text-sm sm:text-base"
+                    className="flex-1 h-11 sm:h-14 text-sm tap-feedback"
                   >
-                    Confirm Sale
+                    Confirm
                   </Button>
                   <Button
                     onClick={handleClearBill}
                     variant="destructive"
                     size="lg"
-                    className="flex-1 h-12 sm:h-14 text-sm sm:text-base"
+                    className="flex-1 h-11 sm:h-14 text-sm tap-feedback"
                   >
                     Clear
                   </Button>

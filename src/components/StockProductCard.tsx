@@ -47,7 +47,7 @@ export const StockProductCard = ({
     ? "bg-expiring border-expiring-border border-2"
     : "border-2";
 
-  const textStyle = isZeroQuantity ? "text-red-600" : "";
+  const textStyle = isZeroQuantity ? "text-destructive" : "";
 
   const formatDate = (dateString?: string) => {
     if (!dateString) return null;
@@ -95,125 +95,113 @@ export const StockProductCard = ({
 
   return (
     <>
-      <Card className={`p-3 sm:p-4 relative ${cardClass}`}>
-        {/* Settings menu - moved Adjust Stock here */}
+      <Card className={`p-3 sm:p-4 relative ${cardClass} w-full`}>
+        {/* Settings menu - black icon for visibility */}
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <Button
               variant="ghost"
               size="sm"
-              className="absolute top-2 right-2 h-8 w-8 p-0"
+              className="absolute top-2 right-2 h-8 w-8 p-0 tap-feedback"
             >
-              <Settings2 className="h-4 w-4" />
+              <Settings2 className="h-4 w-4 text-foreground" />
             </Button>
           </DropdownMenuTrigger>
-          <DropdownMenuContent align="end" className="bg-background border z-50">
-            <DropdownMenuItem onClick={() => setShowAdjustDialog(true)} className="cursor-pointer">
-              <Wrench className="h-4 w-4 mr-2" />
+          <DropdownMenuContent align="end" className="bg-background border-2 z-50 shadow-lg">
+            <DropdownMenuItem onClick={() => setShowAdjustDialog(true)} className="cursor-pointer tap-feedback py-2.5">
+              <Wrench className="h-4 w-4 mr-2 text-foreground" />
               Adjust Stock
             </DropdownMenuItem>
-            <DropdownMenuItem onClick={() => setShowEditForm(true)} className="cursor-pointer">
-              <Settings2 className="h-4 w-4 mr-2" />
+            <DropdownMenuItem onClick={() => setShowEditForm(true)} className="cursor-pointer tap-feedback py-2.5">
+              <Settings2 className="h-4 w-4 mr-2 text-foreground" />
               Edit Product
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
 
-        <div className="space-y-2.5">
+        <div className="space-y-2">
           {/* Product name and batch count */}
           <div className="pr-10">
-            <div className="flex items-start gap-2 flex-wrap mb-1">
+            <div className="flex items-start gap-1.5 flex-wrap mb-0.5">
               <h3 className={`text-base sm:text-lg md:text-xl font-bold break-words leading-tight ${textStyle}`}>{product.name}</h3>
               {product.batches && product.batches.length > 0 && (
-                <span className="px-1.5 py-0.5 bg-primary/10 text-primary text-xs font-medium rounded whitespace-nowrap">
-                  {product.batches.length} {product.batches.length === 1 ? 'batch' : 'batches'}
+                <span className="px-1.5 py-0.5 bg-primary/10 text-primary text-[10px] sm:text-xs font-medium rounded whitespace-nowrap">
+                  {product.batches.length} batch{product.batches.length !== 1 && 'es'}
                 </span>
               )}
             </div>
             {/* Nearest expiry - only show if has active batches */}
             {hasActiveBatches && nearestExpiryDays !== null && (
-              <div className="text-xs sm:text-sm text-muted-foreground">
-                Next expiry: {nearestExpiryDays > 0 ? `${nearestExpiryDays} days` : nearestExpiryDays === 0 ? 'Today' : <span className="text-destructive font-medium">Expired</span>}
+              <div className="text-[11px] sm:text-sm text-muted-foreground">
+                Next expiry: {nearestExpiryDays > 0 ? `${nearestExpiryDays}d` : nearestExpiryDays === 0 ? 'Today' : <span className="text-destructive font-medium">Expired</span>}
               </div>
             )}
           </div>
           
-          {/* Stock quantity */}
+          {/* Stock quantity and prices row */}
           <div className="flex items-center justify-between gap-2">
-            <div>
-              <div className={`text-xl sm:text-2xl font-bold ${textStyle}`}>{product.quantity}</div>
-              <div className="text-xs text-muted-foreground">in stock</div>
+            <div className="flex items-baseline gap-3">
+              <div>
+                <span className={`text-lg sm:text-2xl font-bold ${textStyle}`}>{product.quantity}</span>
+                <span className="text-[10px] sm:text-xs text-muted-foreground ml-1">stock</span>
+              </div>
+              {/* Inline prices for compact view */}
+              {product.sellingPrice && (
+                <span className="text-xs sm:text-sm font-medium">₹{product.sellingPrice}</span>
+              )}
             </div>
             {isZeroQuantity && (
-              <div className="text-xs text-red-600 font-semibold">
-                ⚠️ Restock
-              </div>
+              <span className="text-[10px] sm:text-xs text-destructive font-semibold bg-destructive/10 px-1.5 py-0.5 rounded">
+                Restock
+              </span>
             )}
           </div>
 
-          {/* Earliest expiry date */}
+          {/* Earliest expiry date - compact */}
           {hasActiveBatches && product.expiryDate && (
-            <div className="text-xs sm:text-sm">
-              <span className="text-muted-foreground">Earliest Expiry: </span>
-              <span className="font-medium">{formatDate(product.expiryDate)}</span>
+            <div className="text-[11px] sm:text-sm text-muted-foreground">
+              Expires: <span className="font-medium text-foreground">{formatDate(product.expiryDate)}</span>
             </div>
           )}
 
-          {/* Prices */}
-          {(product.costPrice || product.sellingPrice) && (
-            <div className="flex flex-wrap gap-3 text-xs sm:text-sm">
-              {product.costPrice && (
-                <div>
-                  <span className="text-muted-foreground">Cost: </span>
-                  <span className="font-medium">₹{product.costPrice}</span>
-                </div>
-              )}
-              {product.sellingPrice && (
-                <div>
-                  <span className="text-muted-foreground">Selling: </span>
-                  <span className="font-medium">₹{product.sellingPrice}</span>
-                </div>
-              )}
-            </div>
-          )}
+          {/* Alerts - compact */}
+          <div className="flex flex-wrap gap-1.5">
+            {lowStock && (
+              <span className="text-low-stock-foreground font-semibold text-[10px] sm:text-xs bg-low-stock px-1.5 py-0.5 rounded">
+                ⚠️ Low Stock
+              </span>
+            )}
+            {expiring && (
+              <span className="text-expiring-foreground font-semibold text-[10px] sm:text-xs bg-expiring px-1.5 py-0.5 rounded">
+                ⏰ Expiring
+              </span>
+            )}
+          </div>
 
-          {/* Alerts */}
-          {lowStock && (
-            <div className="text-low-stock-foreground font-semibold text-xs sm:text-sm">
-              ⚠️ Low Stock - Restock soon
-            </div>
-          )}
-
-          {expiring && (
-            <div className="text-expiring-foreground font-semibold text-xs sm:text-sm">
-              ⏰ Expiring Soon
-            </div>
-          )}
-
-          {/* Batch toggle button */}
+          {/* Batch toggle button - black icon for visibility */}
           {product.batches && product.batches.length > 0 && (
             <Button
               onClick={() => setShowBatches(!showBatches)}
               variant="outline"
-              className="w-full h-9 sm:h-10 text-xs sm:text-sm mt-1"
+              className="w-full h-9 sm:h-10 text-xs sm:text-sm tap-feedback border-border"
             >
               {showBatches ? (
                 <>
-                  <ChevronUp className="h-4 w-4 mr-1.5" />
+                  <ChevronUp className="h-4 w-4 mr-1 text-foreground" />
                   Hide Batches
                 </>
               ) : (
                 <>
-                  <ChevronDown className="h-4 w-4 mr-1.5" />
-                  Show Batches ({product.batches.length})
+                  <ChevronDown className="h-4 w-4 mr-1 text-foreground" />
+                  Batches ({product.batches.length})
                 </>
               )}
             </Button>
           )}
 
-          {/* Batch management section */}
+          {/* Batch management section - smooth expand */}
           {product.batches && product.batches.length > 0 && showBatches && (
-            <div className="pt-2 border-t">
+            <div className="pt-2 border-t smooth-expand">
               <BatchManagement
                 batches={product.batches}
                 onAddBatch={handleAddBatch}
@@ -227,7 +215,7 @@ export const StockProductCard = ({
 
           {/* No batches - show add batch option */}
           {(!product.batches || product.batches.length === 0) && (
-            <div className="pt-2">
+            <div className="pt-1.5">
               <BatchManagement
                 batches={[]}
                 onAddBatch={handleAddBatch}
