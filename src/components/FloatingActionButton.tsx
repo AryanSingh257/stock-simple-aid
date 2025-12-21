@@ -42,13 +42,12 @@ export const FloatingActionButton = ({ onAddProduct, onAddCategory }: FloatingAc
       
       <Button
         onClick={() => setIsOpen(!isOpen)}
-        size="lg"
         className={cn(
-          "h-12 w-12 sm:h-16 sm:w-16 rounded-full shadow-xl transition-all duration-200 tap-feedback",
+          "h-14 w-14 min-h-14 min-w-14 p-0 sm:h-16 sm:w-16 sm:min-h-16 sm:min-w-16 rounded-full shadow-xl transition-all duration-200 tap-feedback aspect-square",
           isOpen && "rotate-45"
         )}
       >
-        <Plus className="h-5 w-5 sm:h-8 sm:w-8" />
+        <Plus className="h-6 w-6 sm:h-8 sm:w-8" />
       </Button>
     </div>
   );
