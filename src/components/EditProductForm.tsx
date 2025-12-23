@@ -101,41 +101,40 @@ export const EditProductForm = ({
   return (
     <>
       <Dialog open={open} onOpenChange={onOpenChange}>
-        <DialogContent className="max-w-2xl w-[95vw] max-h-[90vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle className="text-xl md:text-2xl">Edit Product</DialogTitle>
-            <DialogDescription className="text-sm md:text-base">
-              Update product details below
-            </DialogDescription>
+        <DialogContent className="w-[92vw] max-w-md p-4 sm:p-6 max-h-[80vh] overflow-y-auto">
+          <DialogHeader className="pb-2">
+            <DialogTitle className="text-base sm:text-xl">Edit Product</DialogTitle>
           </DialogHeader>
-          <form onSubmit={handleSubmit} className="space-y-4 pt-4">
-            <div className="space-y-2">
-              <Label htmlFor="name" className="text-lg">Product Name *</Label>
+          <form onSubmit={handleSubmit} className="space-y-3">
+            {/* Product Name */}
+            <div className="space-y-1">
+              <Label htmlFor="name" className="text-sm">Name *</Label>
               <Input
                 id="name"
                 value={formData.name}
                 onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                placeholder="Enter product name"
-                className="h-12 text-lg"
+                placeholder="Product name"
+                className="h-9 text-sm"
                 required
               />
             </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="category" className="text-lg">Category</Label>
+            {/* Category */}
+            <div className="space-y-1">
+              <Label className="text-sm">Category</Label>
               <Select
                 value={formData.categoryId || "none"}
                 onValueChange={(value) =>
                   setFormData({ ...formData, categoryId: value === "none" ? undefined : value })
                 }
               >
-                <SelectTrigger className="h-12 text-lg">
-                  <SelectValue placeholder="Select a category" />
+                <SelectTrigger className="h-9 text-sm">
+                  <SelectValue placeholder="Select category" />
                 </SelectTrigger>
                 <SelectContent className="bg-popover">
-                  <SelectItem value="none" className="text-lg">No Category</SelectItem>
+                  <SelectItem value="none" className="text-sm">No Category</SelectItem>
                   {categories.map((cat) => (
-                    <SelectItem key={cat.id} value={cat.id} className="text-lg">
+                    <SelectItem key={cat.id} value={cat.id} className="text-sm">
                       {cat.name}
                     </SelectItem>
                   ))}
@@ -143,16 +142,17 @@ export const EditProductForm = ({
               </Select>
             </div>
 
-            <div className="space-y-2">
-              <Label className="text-lg">How long does this item last?</Label>
+            {/* Shelf Life - compact inline */}
+            <div className="space-y-1">
+              <Label className="text-sm">Shelf Life</Label>
               <div className="flex gap-2">
                 <Input
                   type="number"
                   min="1"
                   value={formData.duration || ""}
                   onChange={(e) => setFormData({ ...formData, duration: parseInt(e.target.value) || 0 })}
-                  placeholder="Duration"
-                  className="h-12 text-lg flex-1"
+                  placeholder="0"
+                  className="h-9 text-sm flex-1"
                 />
                 <Select
                   value={formData.durationUnit}
@@ -160,86 +160,85 @@ export const EditProductForm = ({
                     setFormData({ ...formData, durationUnit: value as "days" | "weeks" | "months" })
                   }
                 >
-                  <SelectTrigger className="h-12 text-lg w-32">
+                  <SelectTrigger className="h-9 text-sm w-24">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent className="bg-popover">
-                    <SelectItem value="days" className="text-lg">Days</SelectItem>
-                    <SelectItem value="weeks" className="text-lg">Weeks</SelectItem>
-                    <SelectItem value="months" className="text-lg">Months</SelectItem>
+                    <SelectItem value="days" className="text-sm">Days</SelectItem>
+                    <SelectItem value="weeks" className="text-sm">Weeks</SelectItem>
+                    <SelectItem value="months" className="text-sm">Months</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
             </div>
 
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="costPrice" className="text-lg">Cost Price</Label>
+            {/* Prices - side by side */}
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-1">
+                <Label className="text-sm">Cost</Label>
                 <Input
-                  id="costPrice"
                   type="number"
                   min="0"
                   step="0.01"
                   value={formData.costPrice || ""}
                   onChange={(e) => setFormData({ ...formData, costPrice: parseFloat(e.target.value) || undefined })}
-                  placeholder="₹ 0.00"
-                  className="h-12 text-lg"
+                  placeholder="₹ 0"
+                  className="h-9 text-sm"
                 />
               </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="sellingPrice" className="text-lg">Selling Price</Label>
+              <div className="space-y-1">
+                <Label className="text-sm">Sell</Label>
                 <Input
-                  id="sellingPrice"
                   type="number"
                   min="0"
                   step="0.01"
                   value={formData.sellingPrice || ""}
                   onChange={(e) => setFormData({ ...formData, sellingPrice: parseFloat(e.target.value) || undefined })}
-                  placeholder="₹ 0.00"
-                  className="h-12 text-lg"
+                  placeholder="₹ 0"
+                  className="h-9 text-sm"
                 />
               </div>
             </div>
 
-            <div className="flex gap-3 pt-4">
+            {/* Buttons - compact row */}
+            <div className="flex gap-2 pt-2">
               <Button
                 type="button"
                 variant="destructive"
+                size="sm"
                 onClick={() => setShowDeleteDialog(true)}
-                className="h-12 text-lg"
+                className="h-9 text-xs px-3 tap-feedback"
               >
-                Delete Product
+                Delete
               </Button>
-              <div className="flex-1 flex gap-3">
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={handleClose}
-                  className="flex-1 h-12 text-lg"
-                >
-                  Cancel
-                </Button>
-                <Button type="submit" className="flex-1 h-12 text-lg">
-                  Update Product
-                </Button>
-              </div>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={handleClose}
+                className="flex-1 h-9 text-sm tap-feedback"
+              >
+                Cancel
+              </Button>
+              <Button type="submit" size="sm" className="flex-1 h-9 text-sm tap-feedback">
+                Save
+              </Button>
             </div>
           </form>
         </DialogContent>
       </Dialog>
 
       <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
-        <AlertDialogContent>
+        <AlertDialogContent className="w-[90vw] max-w-sm p-4">
           <AlertDialogHeader>
-            <AlertDialogTitle className="text-xl">Delete Product?</AlertDialogTitle>
-            <AlertDialogDescription className="text-base">
-              This will permanently delete "{product.name}" and all its batches. This action cannot be undone.
+            <AlertDialogTitle className="text-base">Delete Product?</AlertDialogTitle>
+            <AlertDialogDescription className="text-sm">
+              Permanently delete "{product.name}" and all batches?
             </AlertDialogDescription>
           </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel className="h-12 text-lg">Cancel</AlertDialogCancel>
-            <AlertDialogAction onClick={handleDelete} className="h-12 text-lg bg-destructive hover:bg-destructive/90">
+          <AlertDialogFooter className="gap-2">
+            <AlertDialogCancel className="h-9 text-sm">Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={handleDelete} className="h-9 text-sm bg-destructive hover:bg-destructive/90">
               Delete
             </AlertDialogAction>
           </AlertDialogFooter>
