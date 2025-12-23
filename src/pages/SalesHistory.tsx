@@ -95,9 +95,9 @@ const SalesHistory = () => {
   return (
     <div className="min-h-screen bg-background p-3 sm:p-4 md:p-8">
       <div className="max-w-4xl mx-auto">
-        <div className="mb-6 md:mb-8">
-          <h1 className="text-3xl md:text-4xl font-bold mb-2">Sales & Revenue</h1>
-          <p className="text-lg md:text-xl text-muted-foreground">Track your business performance</p>
+        <div className="mb-3 sm:mb-4 md:mb-6">
+          <h1 className="text-xl sm:text-2xl md:text-4xl font-bold mb-0.5 md:mb-1">Sales & Revenue</h1>
+          <p className="text-xs sm:text-sm md:text-lg text-muted-foreground">Track your business performance</p>
         </div>
 
         <Navigation />
