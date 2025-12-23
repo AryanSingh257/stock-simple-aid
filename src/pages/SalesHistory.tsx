@@ -93,7 +93,7 @@ const SalesHistory = () => {
   }, [revenueData]);
 
   return (
-    <div className="min-h-screen bg-background p-3 sm:p-4 md:p-8">
+    <div className="min-h-screen bg-background p-2 sm:p-4 md:p-8 pb-24">
       <div className="max-w-4xl mx-auto">
         <div className="mb-3 sm:mb-4 md:mb-6">
           <h1 className="text-xl sm:text-2xl md:text-4xl font-bold mb-0.5 md:mb-1">Sales & Revenue</h1>
