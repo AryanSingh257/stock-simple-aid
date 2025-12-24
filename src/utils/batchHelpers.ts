@@ -70,14 +70,14 @@ export const syncProductWithBatches = (product: Product, expiryThreshold: number
   };
 };
 
-// FEFO: First Expired First Out - Deduct from batches that expire soonest
+// FIFO: First In First Out - Deduct from batches that were added first
 export const deductFromBatches = (batches: Batch[], quantityToDeduct: number, expiryThreshold: number = 14): Batch[] => {
   if (quantityToDeduct <= 0) return batches;
 
-  // Sort batches by expiry date (earliest first), exclude expired batches
+  // Sort batches by dateAdded (oldest first), exclude expired batches
   const sortedBatches = [...batches]
     .filter(b => b.status !== "expired" && b.quantity > 0)
-    .sort((a, b) => new Date(a.expiryDate).getTime() - new Date(b.expiryDate).getTime());
+    .sort((a, b) => new Date(a.dateAdded).getTime() - new Date(b.dateAdded).getTime());
 
   let remaining = quantityToDeduct;
   const updatedBatches = [...batches];
