@@ -100,6 +100,7 @@ export const EditProductForm = ({
       sellingPrice: product.sellingPrice,
       categoryId: product.categoryId,
     });
+    setImageUrl(product.imageUrl);
     onOpenChange(false);
   };
 
