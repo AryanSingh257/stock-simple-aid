@@ -13,6 +13,7 @@ export interface Product {
   batches?: Batch[];
   duration?: number;
   durationUnit?: "days" | "weeks" | "months";
+  imageUrl?: string;
 }
 
 export type ProductFormData = Omit<Product, "id" | "createdAt">;

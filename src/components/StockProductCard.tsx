@@ -4,12 +4,14 @@ import { Category } from "@/types/category";
 import { Batch } from "@/types/batch";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { Settings2, ChevronDown, ChevronUp, Wrench } from "lucide-react";
+import { Settings2, ChevronDown, ChevronUp, Wrench, Camera } from "lucide-react";
 import { isLowStock, isExpiringSoon } from "@/utils/productHelpers";
 import { useSettings } from "@/hooks/useSettings";
 import { BatchManagement } from "./BatchManagement";
 import { EditProductForm } from "./EditProductForm";
 import { StockAdjustmentDialog } from "./StockAdjustmentDialog";
+import { ProductImage } from "./ProductImage";
+import { ProductImageDialog } from "./ProductImageDialog";
 import { syncProductWithBatches } from "@/utils/batchHelpers";
 import {
   DropdownMenu,
@@ -36,6 +38,7 @@ export const StockProductCard = ({
   const [showBatches, setShowBatches] = useState(false);
   const [showEditForm, setShowEditForm] = useState(false);
   const [showAdjustDialog, setShowAdjustDialog] = useState(false);
+  const [showImageDialog, setShowImageDialog] = useState(false);
   const { settings } = useSettings();
   const lowStock = isLowStock(product, settings.lowStockThreshold);
   const expiring = isExpiringSoon(product, settings.expiryAlertDays);
@@ -112,6 +115,10 @@ export const StockProductCard = ({
               <Wrench className="h-4 w-4 mr-2 text-foreground" />
               Adjust Stock
             </DropdownMenuItem>
+            <DropdownMenuItem onClick={() => setShowImageDialog(true)} className="cursor-pointer tap-feedback py-2.5">
+              <Camera className="h-4 w-4 mr-2 text-foreground" />
+              {product.imageUrl ? "Change Photo" : "Add Photo"}
+            </DropdownMenuItem>
             <DropdownMenuItem onClick={() => setShowEditForm(true)} className="cursor-pointer tap-feedback py-2.5">
               <Settings2 className="h-4 w-4 mr-2 text-foreground" />
               Edit Product
@@ -121,7 +128,20 @@ export const StockProductCard = ({
 
         <div className="space-y-2">
           {/* Product name and batch count */}
-          <div className="pr-10">
+          <div className="pr-10 flex items-start gap-2.5">
+            <button
+              type="button"
+              onClick={() => setShowImageDialog(true)}
+              aria-label={product.imageUrl ? "Change product photo" : "Add product photo"}
+              className="tap-feedback"
+            >
+              <ProductImage
+                src={product.imageUrl}
+                alt={product.name}
+                className="h-11 w-11 sm:h-14 sm:w-14"
+              />
+            </button>
+            <div className="min-w-0 flex-1">
             <div className="flex items-start gap-1.5 flex-wrap mb-0.5">
               <h3 className={`text-base sm:text-lg md:text-xl font-bold break-words leading-tight ${textStyle}`}>{product.name}</h3>
               {product.batches && product.batches.length > 0 && (
@@ -136,6 +156,7 @@ export const StockProductCard = ({
                 Next expiry: {nearestExpiryDays > 0 ? `${nearestExpiryDays}d` : nearestExpiryDays === 0 ? 'Today' : <span className="text-destructive font-medium">Expired</span>}
               </div>
             )}
+            </div>
           </div>
           
           {/* Stock quantity and prices row */}
@@ -236,6 +257,14 @@ export const StockProductCard = ({
         onUpdate={onUpdateProduct}
         onDelete={onDelete}
         categories={categories}
+      />
+
+      <ProductImageDialog
+        open={showImageDialog}
+        onOpenChange={setShowImageDialog}
+        productName={product.name}
+        imageUrl={product.imageUrl}
+        onSave={(imageUrl) => onUpdateProduct({ ...product, imageUrl })}
       />
 
       <StockAdjustmentDialog

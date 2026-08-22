@@ -17,6 +17,7 @@ import {
 } from "@/components/ui/accordion";
 import { toast } from "sonner";
 import { Receipt, Plus, Minus } from "lucide-react";
+import { ProductImage } from "@/components/ProductImage";
 
 const Billing = () => {
   const [products, setProducts] = useLocalStorage<Product[]>("stockease-products", []);
@@ -242,6 +243,11 @@ const Billing = () => {
                             className={`bg-card border-2 border-border rounded-lg p-2.5 sm:p-4 ${isPurchased ? 'border-primary/30' : ''} ${qtyInBill > 0 ? 'ring-2 ring-primary/50' : ''}`}
                           >
                             <div className="flex items-center justify-between gap-2">
+                              <ProductImage
+                                src={product.imageUrl}
+                                alt={product.name}
+                                className="h-10 w-10 sm:h-12 sm:w-12"
+                              />
                               <div className="flex-1 min-w-0">
                                 <h3 className="text-sm sm:text-base font-semibold truncate leading-tight">
                                   {product.name}

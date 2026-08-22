@@ -29,6 +29,8 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { toast } from "sonner";
+import { ProductImage } from "./ProductImage";
+import { ProductImageDialog } from "./ProductImageDialog";
 
 interface EditProductFormProps {
   open: boolean;
@@ -56,6 +58,8 @@ export const EditProductForm = ({
     categoryId: product.categoryId,
   });
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+  const [showImageDialog, setShowImageDialog] = useState(false);
+  const [imageUrl, setImageUrl] = useState<string | undefined>(product.imageUrl);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -73,6 +77,7 @@ export const EditProductForm = ({
       costPrice: formData.costPrice,
       sellingPrice: formData.sellingPrice,
       categoryId: formData.categoryId,
+      imageUrl,
     };
 
     onUpdate(updatedProduct);
@@ -95,6 +100,7 @@ export const EditProductForm = ({
       sellingPrice: product.sellingPrice,
       categoryId: product.categoryId,
     });
+    setImageUrl(product.imageUrl);
     onOpenChange(false);
   };
 
@@ -106,8 +112,17 @@ export const EditProductForm = ({
             <DialogTitle className="text-base sm:text-xl">Edit Product</DialogTitle>
           </DialogHeader>
           <form onSubmit={handleSubmit} className="space-y-3">
-            {/* Product Name */}
-            <div className="space-y-1">
+            {/* Photo + Product Name */}
+            <div className="flex items-end gap-2.5">
+              <button
+                type="button"
+                onClick={() => setShowImageDialog(true)}
+                aria-label={imageUrl ? "Change product photo" : "Add product photo"}
+                className="tap-feedback"
+              >
+                <ProductImage src={imageUrl} alt={formData.name} className="h-14 w-14" />
+              </button>
+            <div className="space-y-1 flex-1 min-w-0">
               <Label htmlFor="name" className="text-sm">Name *</Label>
               <Input
                 id="name"
@@ -117,6 +132,7 @@ export const EditProductForm = ({
                 className="h-9 text-sm"
                 required
               />
+            </div>
             </div>
 
             {/* Category */}
@@ -227,6 +243,14 @@ export const EditProductForm = ({
           </form>
         </DialogContent>
       </Dialog>
+
+      <ProductImageDialog
+        open={showImageDialog}
+        onOpenChange={setShowImageDialog}
+        productName={product.name}
+        imageUrl={imageUrl}
+        onSave={setImageUrl}
+      />
 
       <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
         <AlertDialogContent className="w-[90vw] max-w-sm p-4">
