@@ -355,9 +355,19 @@ const Billing = () => {
                   </Button>
                 </div>
               </SheetContent>
-            </Sheet>
+          </Sheet>
           </div>
         )}
+
+        <PaymentQrPopup
+          open={qrOpen}
+          onClose={() => {
+            setQrOpen(false);
+            setQrSnapshot(null);
+          }}
+          items={qrSnapshot?.items ?? []}
+          totalAmount={qrSnapshot?.totalAmount ?? 0}
+        />
       </div>
     </div>
   );
