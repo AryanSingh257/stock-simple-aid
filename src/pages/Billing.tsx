@@ -18,6 +18,7 @@ import {
 import { toast } from "sonner";
 import { Receipt, Plus, Minus } from "lucide-react";
 import { ProductImage } from "@/components/ProductImage";
+import { PaymentQrPopup } from "@/components/PaymentQrPopup";
 
 const Billing = () => {
   const [products, setProducts] = useLocalStorage<Product[]>("stockease-products", []);
@@ -26,6 +27,11 @@ const Billing = () => {
   const [searchQuery, setSearchQuery] = useState("");
   const [billItems, setBillItems] = useState<SaleItem[]>([]);
   const [isSheetOpen, setIsSheetOpen] = useState(false);
+  const [qrOpen, setQrOpen] = useState(false);
+  const [qrSnapshot, setQrSnapshot] = useState<{
+    items: SaleItem[];
+    totalAmount: number;
+  } | null>(null);
   const { settings } = useSettings();
   const [expandedCategory, setExpandedCategory] = useState<string | undefined>(undefined);
 
