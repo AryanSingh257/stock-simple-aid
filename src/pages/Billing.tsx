@@ -188,8 +188,11 @@ const Billing = () => {
     };
     setSales([newSale, ...sales]);
 
+    // Capture the confirmed bill for the payment QR popup before clearing
+    setQrSnapshot({ items: billItems, totalAmount });
     setBillItems([]);
     setIsSheetOpen(false);
+    setQrOpen(true);
     toast.success("Sale completed");
   };
 
