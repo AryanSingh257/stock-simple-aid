@@ -18,6 +18,7 @@ import {
 import { toast } from "sonner";
 import { Receipt, Plus, Minus } from "lucide-react";
 import { ProductImage } from "@/components/ProductImage";
+import { PaymentQrPopup } from "@/components/PaymentQrPopup";
 
 const Billing = () => {
   const [products, setProducts] = useLocalStorage<Product[]>("stockease-products", []);
@@ -26,6 +27,11 @@ const Billing = () => {
   const [searchQuery, setSearchQuery] = useState("");
   const [billItems, setBillItems] = useState<SaleItem[]>([]);
   const [isSheetOpen, setIsSheetOpen] = useState(false);
+  const [qrOpen, setQrOpen] = useState(false);
+  const [qrSnapshot, setQrSnapshot] = useState<{
+    items: SaleItem[];
+    totalAmount: number;
+  } | null>(null);
   const { settings } = useSettings();
   const [expandedCategory, setExpandedCategory] = useState<string | undefined>(undefined);
 
@@ -182,8 +188,11 @@ const Billing = () => {
     };
     setSales([newSale, ...sales]);
 
+    // Capture the confirmed bill for the payment QR popup before clearing
+    setQrSnapshot({ items: billItems, totalAmount });
     setBillItems([]);
     setIsSheetOpen(false);
+    setQrOpen(true);
     toast.success("Sale completed");
   };
 
@@ -346,9 +355,19 @@ const Billing = () => {
                   </Button>
                 </div>
               </SheetContent>
-            </Sheet>
+          </Sheet>
           </div>
         )}
+
+        <PaymentQrPopup
+          open={qrOpen}
+          onClose={() => {
+            setQrOpen(false);
+            setQrSnapshot(null);
+          }}
+          items={qrSnapshot?.items ?? []}
+          totalAmount={qrSnapshot?.totalAmount ?? 0}
+        />
       </div>
     </div>
   );
